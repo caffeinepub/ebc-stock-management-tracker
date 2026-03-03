@@ -81,6 +81,58 @@ const GALLERY_PHOTOS = [
     src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
     caption: "Conference Room",
   },
+  {
+    src: "/assets/uploads/918e6d9a5d992d5b249ea39d7dc21f93-1.jpg",
+    caption: "Food Quality Inspection",
+  },
+  {
+    src: "/assets/uploads/caf0639252273c4d59ab442b56c3439e-2.jpg",
+    caption: "Corporate Office Meeting",
+  },
+  {
+    src: "/assets/uploads/3a97e432077c584da3c5cc96c50e2a42-3.jpg",
+    caption: "Professional Kitchen",
+  },
+  {
+    src: "/assets/uploads/3fb97264e0c85024108afeb78301f75b-4.jpg",
+    caption: "Factory Inspection",
+  },
+  {
+    src: "/assets/uploads/f304902a3cf36bd93b1a30f2de0668d8-5.jpg",
+    caption: "Restaurant Service",
+  },
+  {
+    src: "/assets/uploads/bdcccc48aad3dc39ca9abbe1681dc6f8-6.jpg",
+    caption: "Commercial Kitchen",
+  },
+  {
+    src: "/assets/uploads/96ae48f6901a48d4e006fe0fb4995d86-7.jpg",
+    caption: "Chef Plating",
+  },
+  {
+    src: "/assets/uploads/d190d1185f5c06012534cdbd79d2f5a8-8.jpg",
+    caption: "Luxury Dining",
+  },
+  {
+    src: "/assets/uploads/66dcc379d9beae160be9d5ba7e0418f3-9.jpg",
+    caption: "Coffee Bar",
+  },
+  {
+    src: "/assets/uploads/5d0f9f5a963897972fe092e96daff47e-10.jpg",
+    caption: "Chef in Action",
+  },
+  {
+    src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
+    caption: "Coffee Machine",
+  },
+  {
+    src: "/assets/uploads/IMG20260304012503-1.jpg",
+    caption: "CRF Form Page 1",
+  },
+  {
+    src: "/assets/uploads/IMG20260304012455-3.jpg",
+    caption: "CRF Form Page 2",
+  },
 ];
 
 export function LandingPage() {
@@ -155,8 +207,8 @@ export function LandingPage() {
           transition={{ duration: 0.6 }}
           className="text-center mb-4"
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-base font-bold">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             Welcome to EBC Stock Management Tracker
           </span>
         </motion.div>
