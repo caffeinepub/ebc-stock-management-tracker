@@ -57,6 +57,30 @@ const GALLERY_PHOTOS = [
     src: "/assets/generated/steward-coffee-serving.dim_800x500.jpg",
     caption: "Coffee & Beverages",
   },
+  {
+    src: "/assets/uploads/a35130edc8113b0b747ed58f84fa3f8c-1.jpg",
+    caption: "Analytics Meeting",
+  },
+  {
+    src: "/assets/uploads/f1ab4e987c10c6a805c8292b83620e49-2.jpg",
+    caption: "Hotel Reception",
+  },
+  {
+    src: "/assets/uploads/ba1827c7d0547371f27c8f379188d925-3.jpg",
+    caption: "Front Desk",
+  },
+  {
+    src: "/assets/uploads/fe527d8561ded99212cb42b5b313bc1b-4.jpg",
+    caption: "Fine Dining",
+  },
+  {
+    src: "/assets/uploads/2f75b4e0f037ca186c1efa418f124544-5.jpg",
+    caption: "Restaurant",
+  },
+  {
+    src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
+    caption: "Conference Room",
+  },
 ];
 
 export function LandingPage() {
@@ -186,7 +210,7 @@ export function LandingPage() {
         </motion.div>
 
         {/* Thumbnail Strip */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {GALLERY_PHOTOS.map((photo, idx) => (
             <motion.button
               key={photo.src}
@@ -199,7 +223,7 @@ export function LandingPage() {
                   ? "border-primary shadow-glow"
                   : "border-border/40 hover:border-primary/40"
               }`}
-              style={{ height: "80px" }}
+              style={{ height: "70px" }}
               data-ocid={`gallery.item.${idx + 1}`}
             >
               <img
