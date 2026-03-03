@@ -83,6 +83,54 @@ const GALLERY_PHOTOS = [
     src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
     caption: "Conference Room",
   },
+  {
+    src: "/assets/uploads/918e6d9a5d992d5b249ea39d7dc21f93-1.jpg",
+    caption: "Corporate Meeting",
+  },
+  {
+    src: "/assets/uploads/caf0639252273c4d59ab442b56c3439e-2.jpg",
+    caption: "Business Event",
+  },
+  {
+    src: "/assets/uploads/3a97e432077c584da3c5cc96c50e2a42-3.jpg",
+    caption: "Office Setup",
+  },
+  {
+    src: "/assets/uploads/3fb97264e0c85024108afeb78301f75b-4.jpg",
+    caption: "Staff Service",
+  },
+  {
+    src: "/assets/uploads/f304902a3cf36bd93b1a30f2de0668d8-5.jpg",
+    caption: "Hospitality",
+  },
+  {
+    src: "/assets/uploads/bdcccc48aad3dc39ca9abbe1681dc6f8-6.jpg",
+    caption: "Corporate Dining",
+  },
+  {
+    src: "/assets/uploads/96ae48f6901a48d4e006fe0fb4995d86-7.jpg",
+    caption: "Meeting Room",
+  },
+  {
+    src: "/assets/uploads/d190d1185f5c06012534cdbd79d2f5a8-8.jpg",
+    caption: "Executive Suite",
+  },
+  {
+    src: "/assets/uploads/66dcc379d9beae160be9d5ba7e0418f3-9.jpg",
+    caption: "Event Setup",
+  },
+  {
+    src: "/assets/uploads/5d0f9f5a963897972fe092e96daff47e-10.jpg",
+    caption: "Catering Service",
+  },
+  {
+    src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
+    caption: "Conference Hall",
+  },
+  {
+    src: "/assets/uploads/IMG20260304012455-3.jpg",
+    caption: "Stock List",
+  },
 ];
 
 export function LandingPage() {

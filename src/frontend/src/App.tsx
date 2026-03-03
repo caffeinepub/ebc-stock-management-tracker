@@ -19,7 +19,7 @@ function AppLoader() {
             className="w-12 h-12 animate-pulse"
           />
           <span className="font-display text-2xl font-bold text-foreground">
-            ConferStock Elite
+            EBC Stock Management Tracker
           </span>
         </div>
         <div className="flex flex-col gap-2 w-64">
