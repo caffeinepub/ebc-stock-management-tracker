@@ -3,6 +3,8 @@ import {
   ArrowRight,
   BarChart3,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   LogIn,
   Package,
@@ -10,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
 const FEATURES = [
@@ -81,77 +83,48 @@ const GALLERY_PHOTOS = [
     src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
     caption: "Conference Room",
   },
-  {
-    src: "/assets/uploads/918e6d9a5d992d5b249ea39d7dc21f93-1.jpg",
-    caption: "Food Quality Inspection",
-  },
-  {
-    src: "/assets/uploads/caf0639252273c4d59ab442b56c3439e-2.jpg",
-    caption: "Corporate Office Meeting",
-  },
-  {
-    src: "/assets/uploads/3a97e432077c584da3c5cc96c50e2a42-3.jpg",
-    caption: "Professional Kitchen",
-  },
-  {
-    src: "/assets/uploads/3fb97264e0c85024108afeb78301f75b-4.jpg",
-    caption: "Factory Inspection",
-  },
-  {
-    src: "/assets/uploads/f304902a3cf36bd93b1a30f2de0668d8-5.jpg",
-    caption: "Restaurant Service",
-  },
-  {
-    src: "/assets/uploads/bdcccc48aad3dc39ca9abbe1681dc6f8-6.jpg",
-    caption: "Commercial Kitchen",
-  },
-  {
-    src: "/assets/uploads/96ae48f6901a48d4e006fe0fb4995d86-7.jpg",
-    caption: "Chef Plating",
-  },
-  {
-    src: "/assets/uploads/d190d1185f5c06012534cdbd79d2f5a8-8.jpg",
-    caption: "Luxury Dining",
-  },
-  {
-    src: "/assets/uploads/66dcc379d9beae160be9d5ba7e0418f3-9.jpg",
-    caption: "Coffee Bar",
-  },
-  {
-    src: "/assets/uploads/5d0f9f5a963897972fe092e96daff47e-10.jpg",
-    caption: "Chef in Action",
-  },
-  {
-    src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
-    caption: "Coffee Machine",
-  },
-  {
-    src: "/assets/uploads/IMG20260304012503-1.jpg",
-    caption: "CRF Form Page 1",
-  },
-  {
-    src: "/assets/uploads/IMG20260304012455-3.jpg",
-    caption: "CRF Form Page 2",
-  },
 ];
 
 export function LandingPage() {
   const { login, isLoggingIn } = useInternetIdentity();
   const [activePhoto, setActivePhoto] = useState(0);
+  const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Auto-rotate carousel every 3.5 seconds
+  useEffect(() => {
+    autoPlayRef.current = setInterval(() => {
+      setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
+    }, 3500);
+    return () => {
+      if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    };
+  }, []);
+
+  const goToPrev = () => {
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    setActivePhoto(
+      (prev) => (prev - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length,
+    );
+  };
+
+  const goToNext = () => {
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
+  };
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       {/* Background */}
-      <div className="fixed inset-0 bg-hero-pattern pointer-events-none" />
+      <div className="fixed inset-0 bg-hero-pattern pointer-events-none z-0" />
       <div
-        className="fixed inset-0 pointer-events-none opacity-40"
+        className="fixed inset-0 pointer-events-none opacity-40 z-0"
         style={{
           backgroundImage: "url('/assets/generated/hero-bg.dim_1200x800.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       />
-      <div className="fixed inset-0 bg-background/80 pointer-events-none" />
+      <div className="fixed inset-0 bg-background/80 pointer-events-none z-0" />
 
       {/* Nav */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
@@ -243,25 +216,51 @@ export function LandingPage() {
             </motion.div>
           ))}
 
+          {/* Prev/Next Arrows */}
+          <button
+            type="button"
+            onClick={goToPrev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            data-ocid="gallery.pagination_prev"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={goToNext}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            data-ocid="gallery.pagination_next"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
           {/* Nav dots */}
-          <div className="absolute bottom-4 right-4 flex gap-2">
+          <div className="absolute bottom-4 right-4 flex gap-1.5 flex-wrap max-w-[180px] justify-end">
             {GALLERY_PHOTOS.map((photo, idx) => (
               <button
                 key={photo.src}
                 type="button"
-                onClick={() => setActivePhoto(idx)}
-                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                onClick={() => {
+                  if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+                  setActivePhoto(idx);
+                }}
+                className={`w-2 h-2 rounded-full transition-all ${
                   idx === activePhoto
                     ? "bg-white scale-125"
-                    : "bg-white/50 hover:bg-white/75"
+                    : "bg-white/40 hover:bg-white/70"
                 }`}
                 data-ocid={`gallery.tab.${idx + 1}`}
               />
             ))}
           </div>
+
+          {/* Photo counter */}
+          <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
+            {activePhoto + 1} / {GALLERY_PHOTOS.length}
+          </div>
         </motion.div>
 
-        {/* Thumbnail Strip */}
+        {/* Thumbnail Grid */}
         <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
           {GALLERY_PHOTOS.map((photo, idx) => (
             <motion.button
@@ -269,10 +268,13 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 + idx * 0.08 }}
-              onClick={() => setActivePhoto(idx)}
+              onClick={() => {
+                if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+                setActivePhoto(idx);
+              }}
               className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                 idx === activePhoto
-                  ? "border-primary shadow-glow"
+                  ? "border-primary shadow-[0_0_12px_rgba(59,130,246,0.5)]"
                   : "border-border/40 hover:border-primary/40"
               }`}
               style={{ height: "70px" }}

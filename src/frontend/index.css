@@ -161,6 +161,9 @@
   .shadow-nav {
     box-shadow: 0 1px 0 0 oklch(var(--border));
   }
+  .shadow-glow {
+    box-shadow: 0 0 0 2px oklch(var(--primary) / 0.5), 0 0 16px oklch(var(--primary) / 0.2);
+  }
   .glass {
     backdrop-filter: blur(12px);
     background: oklch(var(--card) / 0.85);
