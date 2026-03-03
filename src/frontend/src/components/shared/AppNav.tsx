@@ -60,7 +60,7 @@ export function AppNav({ isAdmin = false }: AppNavProps) {
           />
           <div className="hidden sm:block">
             <p className="font-display text-base font-bold text-foreground leading-none">
-              ConferStock Elite
+              EBC Stock Management Tracker
             </p>
             <p className="text-[10px] text-muted-foreground">
               Stock Tracker Platform

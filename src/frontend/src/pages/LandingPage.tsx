@@ -116,7 +116,7 @@ export function LandingPage() {
           />
           <div>
             <p className="font-display text-lg font-bold text-foreground leading-none">
-              ConferStock Elite
+              EBC Stock Management Tracker
             </p>
             <p className="text-xs text-muted-foreground">
               Stock Tracker Platform
@@ -157,7 +157,7 @@ export function LandingPage() {
         >
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-            Welcome to ConferStock Elite
+            Welcome to EBC Stock Management Tracker
           </span>
         </motion.div>
 
@@ -371,8 +371,8 @@ export function LandingPage() {
       <footer className="relative z-10 border-t border-border/50 py-6">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-sm text-muted-foreground">
           <p>
-            © {new Date().getFullYear()} ConferStock Elite. Built with love
-            using{" "}
+            © {new Date().getFullYear()} EBC Stock Management Tracker. Built
+            with love using{" "}
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
               target="_blank"
