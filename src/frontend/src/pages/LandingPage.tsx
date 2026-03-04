@@ -11,7 +11,6 @@ import {
   Shield,
   Users,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
@@ -20,21 +19,25 @@ const FEATURES = [
     icon: BarChart3,
     title: "Real-time Analytics",
     desc: "Live charts tracking stock usage across all conference rooms",
+    accent: "#3b82f6",
   },
   {
     icon: Shield,
     title: "Admin Approval Flow",
     desc: "Secure role-based access with admin-approved staff registration",
+    accent: "#06b6d4",
   },
   {
     icon: Package,
     title: "49-Item Catalogue",
     desc: "Pre-loaded gifts, chocolates, beverages, and stationery items",
+    accent: "#8b5cf6",
   },
   {
     icon: Users,
     title: "Staff Management",
     desc: "Separate admin and staff dashboards with granular permissions",
+    accent: "#10b981",
   },
 ];
 
@@ -46,6 +49,7 @@ const HIGHLIGHTS = [
   "Approval-based Access",
 ];
 
+// ALL 22 PHOTOS - verified paths
 const GALLERY_PHOTOS = [
   {
     src: "/assets/generated/corporate-reception-welcome.dim_800x500.jpg",
@@ -127,25 +131,57 @@ const GALLERY_PHOTOS = [
     src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
     caption: "Conference Hall",
   },
-  {
-    src: "/assets/uploads/IMG20260304012455-3.jpg",
-    caption: "Stock List",
-  },
+  { src: "/assets/uploads/IMG20260304012455-3.jpg", caption: "Stock List" },
+  { src: "/assets/uploads/IMG20260304012503-1.jpg", caption: "CRF Form" },
 ];
 
 export function LandingPage() {
   const { login, isLoggingIn } = useInternetIdentity();
   const [activePhoto, setActivePhoto] = useState(0);
+  const [_imagesLoaded, setImagesLoaded] = useState<Record<number, boolean>>(
+    {},
+  );
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
 
-  // Auto-rotate carousel every 3.5 seconds
+  const startAutoPlay = () => {
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    autoPlayRef.current = setInterval(() => {
+      setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
+    }, 4000);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     autoPlayRef.current = setInterval(() => {
       setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
-    }, 3500);
+    }, 4000);
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
+  }, []);
+
+  useEffect(() => {
+    if (thumbsRef.current) {
+      const thumb = thumbsRef.current.children[activePhoto] as HTMLElement;
+      if (thumb)
+        thumb.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center",
+        });
+    }
+  }, [activePhoto]);
+
+  // Preload all images on mount
+  useEffect(() => {
+    GALLERY_PHOTOS.forEach((photo, idx) => {
+      const img = new Image();
+      img.onload = () => setImagesLoaded((prev) => ({ ...prev, [idx]: true }));
+      img.onerror = () =>
+        setImagesLoaded((prev) => ({ ...prev, [idx]: false }));
+      img.src = photo.src;
+    });
   }, []);
 
   const goToPrev = () => {
@@ -153,338 +189,785 @@ export function LandingPage() {
     setActivePhoto(
       (prev) => (prev - 1 + GALLERY_PHOTOS.length) % GALLERY_PHOTOS.length,
     );
+    startAutoPlay();
   };
 
   const goToNext = () => {
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
+    startAutoPlay();
   };
 
+  const goToPhoto = (idx: number) => {
+    if (autoPlayRef.current) clearInterval(autoPlayRef.current);
+    setActivePhoto(idx);
+    startAutoPlay();
+  };
+
+  const progressPct = ((activePhoto + 1) / GALLERY_PHOTOS.length) * 100;
+
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      {/* Background */}
-      <div className="fixed inset-0 bg-hero-pattern pointer-events-none z-0" />
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(160deg, #0d1b2e 0%, #112240 35%, #0a192f 70%, #0d1b2e 100%)",
+        fontFamily: "'Plus Jakarta Sans', sans-serif",
+        color: "white",
+      }}
+    >
+      {/* Top accent bar */}
       <div
-        className="fixed inset-0 pointer-events-none opacity-40 z-0"
         style={{
-          backgroundImage: "url('/assets/generated/hero-bg.dim_1200x800.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
+          height: "3px",
+          background:
+            "linear-gradient(90deg, #3b82f6 0%, #06b6d4 25%, #8b5cf6 50%, #10b981 75%, #f59e0b 100%)",
         }}
       />
-      <div className="fixed inset-0 bg-background/80 pointer-events-none z-0" />
 
-      {/* Nav */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-3"
-        >
-          <img
-            src="/assets/generated/conferstock-logo-transparent.dim_120x120.png"
-            alt="Logo"
-            className="w-10 h-10"
-          />
-          <div>
-            <p className="font-display text-lg font-bold text-foreground leading-none">
-              EBC Stock Management Tracker
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Stock Tracker Platform
-            </p>
+      {/* Header */}
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "14px 32px",
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          backdropFilter: "blur(10px)",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "rgba(13,27,46,0.85)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <div
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "10px",
+              background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 4px 16px rgba(59,130,246,0.35)",
+            }}
+          >
+            <Package
+              style={{ width: "20px", height: "20px", color: "white" }}
+            />
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5 }}
-        >
+          <div>
+            <div
+              style={{
+                fontWeight: 800,
+                fontSize: "15px",
+                letterSpacing: "-0.2px",
+                lineHeight: 1.2,
+              }}
+            >
+              EBC Stock Management Tracker
+            </div>
+            <div
+              style={{ color: "#64748b", fontSize: "11px", fontWeight: 500 }}
+            >
+              Enterprise Stock Platform
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
           <Button
             onClick={login}
             disabled={isLoggingIn}
-            variant="outline"
-            size="sm"
-            className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
             data-ocid="nav.login.button"
+            style={{
+              background: "rgba(59,130,246,0.12)",
+              border: "1px solid rgba(59,130,246,0.35)",
+              color: "#93c5fd",
+              borderRadius: "8px",
+              padding: "8px 18px",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
           >
             {isLoggingIn ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <Loader2 style={{ width: "13px", height: "13px" }} />
             ) : (
-              <LogIn className="w-4 h-4 mr-2" />
+              <LogIn style={{ width: "13px", height: "13px" }} />
             )}
             Sign In
           </Button>
-        </motion.div>
+        </div>
       </header>
 
-      {/* Welcome Photo Gallery Section */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-8 pb-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-4"
-        >
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-base font-bold">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Welcome to EBC Stock Management Tracker
-          </span>
-        </motion.div>
-
-        {/* Main Photo Display */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.7, delay: 0.1 }}
-          className="relative rounded-2xl overflow-hidden shadow-2xl border border-border/40 mb-3"
-          style={{ height: "340px" }}
-        >
-          {GALLERY_PHOTOS.map((photo, idx) => (
-            <motion.div
-              key={photo.src}
-              initial={false}
-              animate={{ opacity: idx === activePhoto ? 1 : 0 }}
-              transition={{ duration: 0.6 }}
-              className="absolute inset-0"
+      <div
+        style={{
+          maxWidth: "1280px",
+          margin: "0 auto",
+          padding: "36px 24px 48px",
+        }}
+      >
+        {/* Welcome Banner */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "8px 22px",
+              borderRadius: "50px",
+              background: "rgba(59,130,246,0.1)",
+              border: "1px solid rgba(59,130,246,0.25)",
+              marginBottom: "18px",
+            }}
+          >
+            <span
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                background: "#22d3ee",
+                display: "inline-block",
+                animation: "pulse 2s infinite",
+                boxShadow: "0 0 8px #22d3ee",
+              }}
+            />
+            <span
+              style={{
+                color: "#7dd3fc",
+                fontWeight: 700,
+                fontSize: "13px",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+              }}
             >
-              <img
-                src={photo.src}
-                alt={photo.caption}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              <div className="absolute bottom-4 left-4">
-                <span className="text-white text-sm font-semibold bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
-                  {photo.caption}
-                </span>
+              Welcome to EBC Stock Management Tracker
+            </span>
+          </div>
+          <h1
+            style={{
+              fontSize: "clamp(26px, 4vw, 46px)",
+              fontWeight: 900,
+              lineHeight: 1.12,
+              margin: "0 auto 12px",
+              letterSpacing: "-0.5px",
+              maxWidth: "700px",
+            }}
+          >
+            Corporate Stock{" "}
+            <span
+              style={{
+                background: "linear-gradient(90deg, #60a5fa, #a78bfa, #34d399)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Tracking
+            </span>{" "}
+            Made Enterprise-Ready
+          </h1>
+          <p
+            style={{
+              color: "#94a3b8",
+              fontSize: "15px",
+              maxWidth: "520px",
+              margin: "0 auto",
+              lineHeight: 1.65,
+            }}
+          >
+            Manage gifts, chocolates, beverages and stationery across conference
+            rooms with real-time tracking, analytics, and admin-controlled
+            access.
+          </p>
+        </div>
+
+        {/* ===== PHOTO GALLERY ===== */}
+        <div style={{ marginBottom: "52px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontSize: "15px" }}>📸</span>
+              <span
+                style={{
+                  color: "#e2e8f0",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Our Facilities
+              </span>
+              <span
+                style={{
+                  background: "rgba(59,130,246,0.15)",
+                  border: "1px solid rgba(59,130,246,0.3)",
+                  color: "#60a5fa",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  padding: "2px 10px",
+                  borderRadius: "20px",
+                }}
+              >
+                {GALLERY_PHOTOS.length} Photos
+              </span>
+            </div>
+            <span
+              style={{ color: "#475569", fontSize: "13px", fontWeight: 600 }}
+            >
+              {activePhoto + 1} / {GALLERY_PHOTOS.length}
+            </span>
+          </div>
+
+          {/* Main carousel -- CSS transitions only, no framer-motion */}
+          <div
+            style={{
+              position: "relative",
+              borderRadius: "18px",
+              overflow: "hidden",
+              height: "440px",
+              border: "1px solid rgba(255,255,255,0.1)",
+              boxShadow: "0 30px 70px rgba(0,0,0,0.6)",
+            }}
+          >
+            {/* All images stacked, CSS opacity only */}
+            {GALLERY_PHOTOS.map((photo, idx) => (
+              <div
+                key={photo.src}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: idx === activePhoto ? 1 : 0,
+                  transition: "opacity 0.55s ease-in-out",
+                  zIndex: idx === activePhoto ? 2 : 1,
+                }}
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.caption}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    backgroundColor: "#1e3a5f",
+                  }}
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    target.style.display = "none";
+                  }}
+                />
+                {/* Gradient overlay */}
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%)",
+                  }}
+                />
+                {/* Caption */}
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "22px",
+                    left: "22px",
+                    zIndex: 3,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "white",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      background: "rgba(0,0,0,0.45)",
+                      backdropFilter: "blur(10px)",
+                      padding: "6px 18px",
+                      borderRadius: "30px",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                    }}
+                  >
+                    {photo.caption}
+                  </span>
+                </div>
+                {/* Index badge */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "14px",
+                    left: "14px",
+                    zIndex: 3,
+                    background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                    color: "white",
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    padding: "4px 11px",
+                    borderRadius: "20px",
+                  }}
+                >
+                  {idx + 1} / {GALLERY_PHOTOS.length}
+                </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
 
-          {/* Prev/Next Arrows */}
-          <button
-            type="button"
-            onClick={goToPrev}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-            data-ocid="gallery.pagination_prev"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            type="button"
-            onClick={goToNext}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
-            data-ocid="gallery.pagination_next"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+            {/* Prev */}
+            <button
+              type="button"
+              onClick={goToPrev}
+              data-ocid="gallery.pagination_prev"
+              style={{
+                position: "absolute",
+                left: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 10,
+                width: "44px",
+                height: "44px",
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.5)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ChevronLeft style={{ width: "20px", height: "20px" }} />
+            </button>
 
-          {/* Nav dots */}
-          <div className="absolute bottom-4 right-4 flex gap-1.5 flex-wrap max-w-[180px] justify-end">
+            {/* Next */}
+            <button
+              type="button"
+              onClick={goToNext}
+              data-ocid="gallery.pagination_next"
+              style={{
+                position: "absolute",
+                right: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                zIndex: 10,
+                width: "44px",
+                height: "44px",
+                borderRadius: "50%",
+                background: "rgba(0,0,0,0.5)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                color: "white",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ChevronRight style={{ width: "20px", height: "20px" }} />
+            </button>
+
+            {/* Progress bar */}
+            <div
+              style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "4px",
+                background: "rgba(255,255,255,0.1)",
+                zIndex: 10,
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  background: "linear-gradient(90deg,#3b82f6,#8b5cf6)",
+                  width: `${progressPct}%`,
+                  transition: "width 0.5s ease",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Thumbnail strip -- horizontal scroll */}
+          <div
+            ref={thumbsRef}
+            style={{
+              display: "flex",
+              gap: "8px",
+              marginTop: "12px",
+              overflowX: "auto",
+              paddingBottom: "6px",
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(59,130,246,0.4) transparent",
+            }}
+          >
             {GALLERY_PHOTOS.map((photo, idx) => (
               <button
                 key={photo.src}
                 type="button"
-                onClick={() => {
-                  if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-                  setActivePhoto(idx);
+                onClick={() => goToPhoto(idx)}
+                data-ocid={`gallery.item.${idx + 1}`}
+                title={photo.caption}
+                style={{
+                  flexShrink: 0,
+                  width: "88px",
+                  height: "58px",
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                  border:
+                    idx === activePhoto
+                      ? "2px solid #3b82f6"
+                      : "2px solid rgba(255,255,255,0.08)",
+                  cursor: "pointer",
+                  padding: 0,
+                  background: "#1e3a5f",
+                  boxShadow:
+                    idx === activePhoto
+                      ? "0 0 14px rgba(59,130,246,0.55)"
+                      : "none",
+                  transition: "border-color 0.2s, box-shadow 0.2s",
+                  position: "relative",
                 }}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  idx === activePhoto
-                    ? "bg-white scale-125"
-                    : "bg-white/40 hover:bg-white/70"
-                }`}
-                data-ocid={`gallery.tab.${idx + 1}`}
-              />
+              >
+                <img
+                  src={photo.src}
+                  alt={photo.caption}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "2px",
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "white",
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      background: "rgba(0,0,0,0.6)",
+                      padding: "1px 5px",
+                      borderRadius: "3px",
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                </div>
+                {idx === activePhoto && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(59,130,246,0.2)",
+                    }}
+                  />
+                )}
+              </button>
             ))}
           </div>
+          <p
+            style={{
+              color: "#334155",
+              fontSize: "11px",
+              marginTop: "5px",
+              textAlign: "right",
+            }}
+          >
+            ← Scroll to browse all {GALLERY_PHOTOS.length} photos →
+          </p>
+        </div>
 
-          {/* Photo counter */}
-          <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full">
-            {activePhoto + 1} / {GALLERY_PHOTOS.length}
-          </div>
-        </motion.div>
-
-        {/* Thumbnail Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-          {GALLERY_PHOTOS.map((photo, idx) => (
-            <motion.button
-              key={photo.src}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 + idx * 0.08 }}
-              onClick={() => {
-                if (autoPlayRef.current) clearInterval(autoPlayRef.current);
-                setActivePhoto(idx);
+        {/* Stats Row */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4,1fr)",
+            gap: "14px",
+            marginBottom: "44px",
+          }}
+        >
+          {[
+            {
+              label: "Total Items",
+              value: "49",
+              color: "#3b82f6",
+              border: "#1d4ed8",
+            },
+            {
+              label: "Categories",
+              value: "4",
+              color: "#8b5cf6",
+              border: "#6d28d9",
+            },
+            {
+              label: "Facility Photos",
+              value: "22",
+              color: "#06b6d4",
+              border: "#0e7490",
+            },
+            {
+              label: "Access Levels",
+              value: "2",
+              color: "#10b981",
+              border: "#047857",
+            },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              style={{
+                background: `rgba(${stat.color === "#3b82f6" ? "59,130,246" : stat.color === "#8b5cf6" ? "139,92,246" : stat.color === "#06b6d4" ? "6,182,212" : "16,185,129"},0.08)`,
+                border: `1px solid ${stat.color}30`,
+                borderTop: `3px solid ${stat.color}`,
+                borderRadius: "12px",
+                padding: "18px",
+                textAlign: "center",
               }}
-              className={`relative rounded-xl overflow-hidden border-2 transition-all ${
-                idx === activePhoto
-                  ? "border-primary shadow-[0_0_12px_rgba(59,130,246,0.5)]"
-                  : "border-border/40 hover:border-primary/40"
-              }`}
-              style={{ height: "70px" }}
-              data-ocid={`gallery.item.${idx + 1}`}
             >
-              <img
-                src={photo.src}
-                alt={photo.caption}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute bottom-1 left-0 right-0 text-center">
-                <span className="text-white text-[10px] font-medium">
-                  {photo.caption}
-                </span>
+              <div
+                style={{
+                  color: stat.color,
+                  fontSize: "34px",
+                  fontWeight: 900,
+                  lineHeight: 1,
+                }}
+              >
+                {stat.value}
               </div>
-            </motion.button>
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "12px",
+                  marginTop: "7px",
+                  fontWeight: 600,
+                }}
+              >
+                {stat.label}
+              </div>
+            </div>
           ))}
         </div>
-      </section>
 
-      {/* Hero */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 pt-10 pb-24">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
+        {/* Bottom: Highlights + CTA + Features */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "48px",
+            alignItems: "start",
+          }}
+        >
+          {/* Left */}
           <div>
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="font-display text-4xl lg:text-5xl font-bold text-foreground leading-[1.1] mb-6"
+            <h2
+              style={{
+                fontSize: "22px",
+                fontWeight: 800,
+                marginBottom: "20px",
+                letterSpacing: "-0.3px",
+              }}
             >
-              Conference Stock{" "}
-              <span className="text-gradient-blue">Tracking</span> Made
-              Enterprise-Ready
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="text-lg text-muted-foreground mb-8 leading-relaxed max-w-lg"
-            >
-              Manage gifts, chocolates, beverages and stationery across all
-              conference rooms with real-time tracking, analytics, and
-              admin-controlled staff access.
-            </motion.p>
-
-            {/* Highlights */}
-            <motion.ul
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.35 }}
-              className="flex flex-col gap-2 mb-10"
+              Everything You Need to{" "}
+              <span style={{ color: "#60a5fa" }}>Manage Stock</span>
+            </h2>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: "0 0 28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+              }}
             >
               {HIGHLIGHTS.map((h) => (
                 <li
                   key={h}
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    color: "#cbd5e1",
+                    fontSize: "14px",
+                  }}
                 >
-                  <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
+                  <CheckCircle2
+                    style={{
+                      width: "16px",
+                      height: "16px",
+                      color: "#22c55e",
+                      flexShrink: 0,
+                    }}
+                  />
                   {h}
                 </li>
               ))}
-            </motion.ul>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-col sm:flex-row gap-4"
+            </ul>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
               <Button
                 onClick={login}
                 disabled={isLoggingIn}
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-glow transition-all gap-2 font-semibold"
                 data-ocid="hero.login.primary_button"
+                style={{
+                  background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "10px",
+                  padding: "14px 28px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  boxShadow: "0 8px 28px rgba(59,130,246,0.4)",
+                  justifyContent: "center",
+                }}
               >
                 {isLoggingIn ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 style={{ width: "18px", height: "18px" }} />
                 ) : (
-                  <LogIn className="w-5 h-5" />
+                  <LogIn style={{ width: "18px", height: "18px" }} />
                 )}
                 {isLoggingIn ? "Connecting..." : "Login with Internet Identity"}
               </Button>
-
               <Button
                 onClick={login}
                 disabled={isLoggingIn}
                 variant="outline"
-                size="lg"
-                className="border-border hover:border-primary/50 gap-2 font-semibold"
                 data-ocid="hero.register.secondary_button"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  color: "#93c5fd",
+                  border: "1px solid rgba(99,179,237,0.3)",
+                  borderRadius: "10px",
+                  padding: "14px 28px",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  justifyContent: "center",
+                }}
               >
                 Request Staff Access
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight style={{ width: "15px", height: "15px" }} />
               </Button>
-            </motion.div>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="mt-4 text-xs text-muted-foreground"
+            </div>
+            <p
+              style={{ color: "#334155", fontSize: "12px", marginTop: "10px" }}
             >
               Staff access requires admin approval after registration
-            </motion.p>
+            </p>
           </div>
 
-          {/* Right side: feature cards */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="grid grid-cols-2 gap-4 lg:block lg:space-y-0"
+          {/* Right: Feature cards */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+            }}
           >
-            <div className="grid grid-cols-1 gap-4">
-              {FEATURES.map((feature, idx) => (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 + idx * 0.1 }}
-                  whileHover={{ y: -2, transition: { duration: 0.2 } }}
-                  className="bg-card/80 backdrop-blur-sm rounded-xl p-4 border border-border shadow-card hover:shadow-card-hover transition-shadow"
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${f.accent}25`,
+                  borderLeft: `3px solid ${f.accent}`,
+                  borderRadius: "12px",
+                  padding: "18px",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <div
+                  style={{
+                    width: "38px",
+                    height: "38px",
+                    borderRadius: "9px",
+                    background: `${f.accent}18`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: "12px",
+                  }}
                 >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <feature.icon className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-display font-semibold text-foreground text-sm mb-1">
-                        {feature.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        {feature.desc}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                  <f.icon
+                    style={{ width: "18px", height: "18px", color: f.accent }}
+                  />
+                </div>
+                <div
+                  style={{
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: "13px",
+                    marginBottom: "5px",
+                  }}
+                >
+                  {f.title}
+                </div>
+                <div
+                  style={{
+                    color: "#64748b",
+                    fontSize: "11px",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {f.desc}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </main>
+      </div>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-border/50 py-6">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-sm text-muted-foreground">
-          <p>
-            © {new Date().getFullYear()} EBC Stock Management Tracker. Built
-            with love using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary hover:underline"
-            >
-              caffeine.ai
-            </a>
-          </p>
-          <p>Secure · Enterprise-Ready · ICP Powered</p>
+      <footer
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          padding: "18px 32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: "auto",
+        }}
+      >
+        <div style={{ color: "#334155", fontSize: "13px" }}>
+          © {new Date().getFullYear()} EBC Stock Management Tracker —{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "#3b82f6", textDecoration: "none" }}
+          >
+            Built on caffeine.ai
+          </a>
+        </div>
+        <div style={{ color: "#1e293b", fontSize: "12px" }}>
+          Secure · Enterprise-Ready · ICP Powered
         </div>
       </footer>
     </div>
