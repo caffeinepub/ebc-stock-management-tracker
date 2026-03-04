@@ -19,25 +19,29 @@ const FEATURES = [
     icon: BarChart3,
     title: "Real-time Analytics",
     desc: "Live charts tracking stock usage across all conference rooms",
-    accent: "#3b82f6",
+    accent: "#0369a1",
+    bg: "#e0f2fe",
   },
   {
     icon: Shield,
     title: "Admin Approval Flow",
     desc: "Secure role-based access with admin-approved staff registration",
-    accent: "#06b6d4",
+    accent: "#0891b2",
+    bg: "#cffafe",
   },
   {
     icon: Package,
     title: "49-Item Catalogue",
     desc: "Pre-loaded gifts, chocolates, beverages, and stationery items",
-    accent: "#8b5cf6",
+    accent: "#7c3aed",
+    bg: "#ede9fe",
   },
   {
     icon: Users,
     title: "Staff Management",
     desc: "Separate admin and staff dashboards with granular permissions",
-    accent: "#10b981",
+    accent: "#059669",
+    bg: "#d1fae5",
   },
 ];
 
@@ -54,93 +58,119 @@ const GALLERY_PHOTOS = [
   {
     src: "/assets/generated/corporate-reception-welcome.dim_800x500.jpg",
     caption: "Corporate Reception",
+    fallbackColor: "#1e40af",
   },
   {
     src: "/assets/generated/steward-serving-food.dim_800x500.jpg",
     caption: "Food Service",
+    fallbackColor: "#065f46",
   },
   {
     src: "/assets/generated/steward-coffee-serving.dim_800x500.jpg",
     caption: "Coffee & Beverages",
+    fallbackColor: "#7c2d12",
   },
   {
     src: "/assets/uploads/a35130edc8113b0b747ed58f84fa3f8c-1.jpg",
     caption: "Analytics Meeting",
+    fallbackColor: "#1e3a5f",
   },
   {
     src: "/assets/uploads/f1ab4e987c10c6a805c8292b83620e49-2.jpg",
     caption: "Hotel Reception",
+    fallbackColor: "#3b0764",
   },
   {
     src: "/assets/uploads/ba1827c7d0547371f27c8f379188d925-3.jpg",
     caption: "Front Desk",
+    fallbackColor: "#134e4a",
   },
   {
     src: "/assets/uploads/fe527d8561ded99212cb42b5b313bc1b-4.jpg",
     caption: "Fine Dining",
+    fallbackColor: "#7f1d1d",
   },
   {
     src: "/assets/uploads/2f75b4e0f037ca186c1efa418f124544-5.jpg",
     caption: "Restaurant",
+    fallbackColor: "#1a2e4a",
   },
   {
     src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
     caption: "Conference Room",
+    fallbackColor: "#14532d",
   },
   {
     src: "/assets/uploads/918e6d9a5d992d5b249ea39d7dc21f93-1.jpg",
     caption: "Corporate Meeting",
+    fallbackColor: "#1e3a5f",
   },
   {
     src: "/assets/uploads/caf0639252273c4d59ab442b56c3439e-2.jpg",
     caption: "Business Event",
+    fallbackColor: "#3b0764",
   },
   {
     src: "/assets/uploads/3a97e432077c584da3c5cc96c50e2a42-3.jpg",
     caption: "Office Setup",
+    fallbackColor: "#7c2d12",
   },
   {
     src: "/assets/uploads/3fb97264e0c85024108afeb78301f75b-4.jpg",
     caption: "Staff Service",
+    fallbackColor: "#134e4a",
   },
   {
     src: "/assets/uploads/f304902a3cf36bd93b1a30f2de0668d8-5.jpg",
     caption: "Hospitality",
+    fallbackColor: "#1e40af",
   },
   {
     src: "/assets/uploads/bdcccc48aad3dc39ca9abbe1681dc6f8-6.jpg",
     caption: "Corporate Dining",
+    fallbackColor: "#7f1d1d",
   },
   {
     src: "/assets/uploads/96ae48f6901a48d4e006fe0fb4995d86-7.jpg",
     caption: "Meeting Room",
+    fallbackColor: "#1a2e4a",
   },
   {
     src: "/assets/uploads/d190d1185f5c06012534cdbd79d2f5a8-8.jpg",
     caption: "Executive Suite",
+    fallbackColor: "#14532d",
   },
   {
     src: "/assets/uploads/66dcc379d9beae160be9d5ba7e0418f3-9.jpg",
     caption: "Event Setup",
+    fallbackColor: "#3b0764",
   },
   {
     src: "/assets/uploads/5d0f9f5a963897972fe092e96daff47e-10.jpg",
     caption: "Catering Service",
+    fallbackColor: "#7c2d12",
   },
   {
     src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
     caption: "Conference Hall",
+    fallbackColor: "#1e40af",
   },
-  { src: "/assets/uploads/IMG20260304012455-3.jpg", caption: "Stock List" },
-  { src: "/assets/uploads/IMG20260304012503-1.jpg", caption: "CRF Form" },
+  {
+    src: "/assets/uploads/IMG20260304012455-3.jpg",
+    caption: "Stock List",
+    fallbackColor: "#065f46",
+  },
+  {
+    src: "/assets/uploads/IMG20260304012503-1.jpg",
+    caption: "CRF Form",
+    fallbackColor: "#1e3a5f",
+  },
 ];
 
 export function LandingPage() {
   const { login, isLoggingIn } = useInternetIdentity();
   const [activePhoto, setActivePhoto] = useState(0);
-  const [_imagesLoaded, setImagesLoaded] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
 
@@ -151,7 +181,6 @@ export function LandingPage() {
     }, 4000);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     autoPlayRef.current = setInterval(() => {
       setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
@@ -173,17 +202,6 @@ export function LandingPage() {
     }
   }, [activePhoto]);
 
-  // Preload all images on mount
-  useEffect(() => {
-    GALLERY_PHOTOS.forEach((photo, idx) => {
-      const img = new Image();
-      img.onload = () => setImagesLoaded((prev) => ({ ...prev, [idx]: true }));
-      img.onerror = () =>
-        setImagesLoaded((prev) => ({ ...prev, [idx]: false }));
-      img.src = photo.src;
-    });
-  }, []);
-
   const goToPrev = () => {
     if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     setActivePhoto(
@@ -204,24 +222,29 @@ export function LandingPage() {
     startAutoPlay();
   };
 
+  const handleImgError = (idx: number) => {
+    setImgErrors((prev) => ({ ...prev, [idx]: true }));
+  };
+
   const progressPct = ((activePhoto + 1) / GALLERY_PHOTOS.length) * 100;
+  const currentPhoto = GALLERY_PHOTOS[activePhoto];
 
   return (
     <div
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(160deg, #0d1b2e 0%, #112240 35%, #0a192f 70%, #0d1b2e 100%)",
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-        color: "white",
+          "linear-gradient(160deg, #f0f7ff 0%, #ffffff 40%, #faf8ff 100%)",
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+        color: "#1e293b",
       }}
     >
       {/* Top accent bar */}
       <div
         style={{
-          height: "3px",
+          height: "4px",
           background:
-            "linear-gradient(90deg, #3b82f6 0%, #06b6d4 25%, #8b5cf6 50%, #10b981 75%, #f59e0b 100%)",
+            "linear-gradient(90deg, #0369a1 0%, #0891b2 20%, #7c3aed 45%, #059669 70%, #d97706 100%)",
         }}
       />
 
@@ -232,38 +255,40 @@ export function LandingPage() {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "14px 32px",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
-          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid #e2e8f0",
+          backgroundColor: "rgba(255,255,255,0.92)",
+          backdropFilter: "blur(12px)",
           position: "sticky",
           top: 0,
           zIndex: 50,
-          background: "rgba(13,27,46,0.85)",
+          boxShadow: "0 1px 12px rgba(0,0,0,0.06)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           <div
             style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+              width: "44px",
+              height: "44px",
+              borderRadius: "12px",
+              background: "linear-gradient(135deg, #0369a1, #7c3aed)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(59,130,246,0.35)",
+              boxShadow: "0 4px 14px rgba(3,105,161,0.35)",
             }}
           >
             <Package
-              style={{ width: "20px", height: "20px", color: "white" }}
+              style={{ width: "22px", height: "22px", color: "white" }}
             />
           </div>
           <div>
             <div
               style={{
                 fontWeight: 800,
-                fontSize: "15px",
-                letterSpacing: "-0.2px",
+                fontSize: "16px",
+                letterSpacing: "-0.3px",
                 lineHeight: 1.2,
+                color: "#0f172a",
               }}
             >
               EBC Stock Management Tracker
@@ -281,21 +306,25 @@ export function LandingPage() {
             disabled={isLoggingIn}
             data-ocid="nav.login.button"
             style={{
-              background: "rgba(59,130,246,0.12)",
-              border: "1px solid rgba(59,130,246,0.35)",
-              color: "#93c5fd",
+              background: "linear-gradient(135deg, #0369a1, #0891b2)",
+              border: "none",
+              color: "white",
               borderRadius: "8px",
-              padding: "8px 18px",
+              padding: "8px 20px",
               fontSize: "13px",
               fontWeight: 600,
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
               gap: "6px",
+              boxShadow: "0 2px 8px rgba(3,105,161,0.3)",
             }}
           >
             {isLoggingIn ? (
-              <Loader2 style={{ width: "13px", height: "13px" }} />
+              <Loader2
+                style={{ width: "13px", height: "13px" }}
+                className="animate-spin"
+              />
             ) : (
               <LogIn style={{ width: "13px", height: "13px" }} />
             )}
@@ -320,8 +349,8 @@ export function LandingPage() {
               gap: "8px",
               padding: "8px 22px",
               borderRadius: "50px",
-              background: "rgba(59,130,246,0.1)",
-              border: "1px solid rgba(59,130,246,0.25)",
+              background: "linear-gradient(135deg, #dbeafe, #ede9fe)",
+              border: "1px solid #bfdbfe",
               marginBottom: "18px",
             }}
           >
@@ -330,15 +359,14 @@ export function LandingPage() {
                 width: "7px",
                 height: "7px",
                 borderRadius: "50%",
-                background: "#22d3ee",
+                background: "#0891b2",
                 display: "inline-block",
-                animation: "pulse 2s infinite",
-                boxShadow: "0 0 8px #22d3ee",
+                boxShadow: "0 0 0 3px rgba(8,145,178,0.2)",
               }}
             />
             <span
               style={{
-                color: "#7dd3fc",
+                color: "#0369a1",
                 fontWeight: 700,
                 fontSize: "13px",
                 letterSpacing: "0.8px",
@@ -350,20 +378,22 @@ export function LandingPage() {
           </div>
           <h1
             style={{
-              fontSize: "clamp(26px, 4vw, 46px)",
+              fontSize: "clamp(28px, 4vw, 48px)",
               fontWeight: 900,
-              lineHeight: 1.12,
-              margin: "0 auto 12px",
+              lineHeight: 1.1,
+              margin: "0 auto 14px",
               letterSpacing: "-0.5px",
               maxWidth: "700px",
+              color: "#0f172a",
             }}
           >
             Corporate Stock{" "}
             <span
               style={{
-                background: "linear-gradient(90deg, #60a5fa, #a78bfa, #34d399)",
+                background: "linear-gradient(90deg, #0369a1, #7c3aed, #059669)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}
             >
               Tracking
@@ -372,11 +402,11 @@ export function LandingPage() {
           </h1>
           <p
             style={{
-              color: "#94a3b8",
-              fontSize: "15px",
-              maxWidth: "520px",
+              color: "#475569",
+              fontSize: "16px",
+              maxWidth: "540px",
               margin: "0 auto",
-              lineHeight: 1.65,
+              lineHeight: 1.7,
             }}
           >
             Manage gifts, chocolates, beverages and stationery across conference
@@ -392,29 +422,29 @@ export function LandingPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              marginBottom: "12px",
+              marginBottom: "14px",
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "15px" }}>📸</span>
+              <span style={{ fontSize: "16px" }}>📸</span>
               <span
                 style={{
-                  color: "#e2e8f0",
-                  fontSize: "14px",
+                  color: "#0f172a",
+                  fontSize: "15px",
                   fontWeight: 700,
-                  letterSpacing: "0.5px",
+                  letterSpacing: "0.3px",
                 }}
               >
                 Our Facilities
               </span>
               <span
                 style={{
-                  background: "rgba(59,130,246,0.15)",
-                  border: "1px solid rgba(59,130,246,0.3)",
-                  color: "#60a5fa",
+                  background: "linear-gradient(135deg, #dbeafe, #ede9fe)",
+                  border: "1px solid #bfdbfe",
+                  color: "#0369a1",
                   fontSize: "11px",
                   fontWeight: 700,
-                  padding: "2px 10px",
+                  padding: "3px 12px",
                   borderRadius: "20px",
                 }}
               >
@@ -422,24 +452,24 @@ export function LandingPage() {
               </span>
             </div>
             <span
-              style={{ color: "#475569", fontSize: "13px", fontWeight: 600 }}
+              style={{ color: "#64748b", fontSize: "13px", fontWeight: 600 }}
             >
               {activePhoto + 1} / {GALLERY_PHOTOS.length}
             </span>
           </div>
 
-          {/* Main carousel -- CSS transitions only, no framer-motion */}
+          {/* Main carousel */}
           <div
             style={{
               position: "relative",
-              borderRadius: "18px",
+              borderRadius: "20px",
               overflow: "hidden",
-              height: "440px",
-              border: "1px solid rgba(255,255,255,0.1)",
-              boxShadow: "0 30px 70px rgba(0,0,0,0.6)",
+              height: "460px",
+              border: "1px solid #e2e8f0",
+              boxShadow:
+                "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06)",
             }}
           >
-            {/* All images stacked, CSS opacity only */}
             {GALLERY_PHOTOS.map((photo, idx) => (
               <div
                 key={photo.src}
@@ -449,30 +479,57 @@ export function LandingPage() {
                   opacity: idx === activePhoto ? 1 : 0,
                   transition: "opacity 0.55s ease-in-out",
                   zIndex: idx === activePhoto ? 2 : 1,
+                  backgroundColor: photo.fallbackColor,
                 }}
               >
-                <img
-                  src={photo.src}
-                  alt={photo.caption}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                    backgroundColor: "#1e3a5f",
-                  }}
-                  onError={(e) => {
-                    const target = e.currentTarget as HTMLImageElement;
-                    target.style.display = "none";
-                  }}
-                />
+                {/* Always render img — fallback color on container handles failed loads */}
+                {!imgErrors[idx] ? (
+                  <img
+                    src={photo.src}
+                    alt={photo.caption}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                    onError={() => handleImgError(idx)}
+                  />
+                ) : (
+                  /* Styled placeholder for failed images */
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "column",
+                      gap: "12px",
+                      background: `linear-gradient(135deg, ${photo.fallbackColor}cc, ${photo.fallbackColor})`,
+                    }}
+                  >
+                    <div style={{ fontSize: "48px", opacity: 0.7 }}>🏢</div>
+                    <span
+                      style={{
+                        color: "rgba(255,255,255,0.8)",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {photo.caption}
+                    </span>
+                  </div>
+                )}
+
                 {/* Gradient overlay */}
                 <div
                   style={{
                     position: "absolute",
                     inset: 0,
                     background:
-                      "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 55%, transparent 100%)",
+                      "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 50%, transparent 100%)",
+                    pointerEvents: "none",
                   }}
                 />
                 {/* Caption */}
@@ -489,11 +546,11 @@ export function LandingPage() {
                       color: "white",
                       fontSize: "15px",
                       fontWeight: 700,
-                      background: "rgba(0,0,0,0.45)",
+                      background: "rgba(0,0,0,0.4)",
                       backdropFilter: "blur(10px)",
                       padding: "6px 18px",
                       borderRadius: "30px",
-                      border: "1px solid rgba(255,255,255,0.18)",
+                      border: "1px solid rgba(255,255,255,0.2)",
                     }}
                   >
                     {photo.caption}
@@ -506,12 +563,13 @@ export function LandingPage() {
                     top: "14px",
                     left: "14px",
                     zIndex: 3,
-                    background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                    background: "linear-gradient(135deg, #0369a1, #7c3aed)",
                     color: "white",
                     fontSize: "11px",
                     fontWeight: 800,
-                    padding: "4px 11px",
+                    padding: "4px 12px",
                     borderRadius: "20px",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
                   }}
                 >
                   {idx + 1} / {GALLERY_PHOTOS.length}
@@ -530,17 +588,18 @@ export function LandingPage() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 zIndex: 10,
-                width: "44px",
-                height: "44px",
+                width: "46px",
+                height: "46px",
                 borderRadius: "50%",
-                background: "rgba(0,0,0,0.5)",
+                background: "rgba(255,255,255,0.92)",
                 backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "white",
+                border: "1px solid rgba(255,255,255,0.6)",
+                color: "#0f172a",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
               }}
             >
               <ChevronLeft style={{ width: "20px", height: "20px" }} />
@@ -557,17 +616,18 @@ export function LandingPage() {
                 top: "50%",
                 transform: "translateY(-50%)",
                 zIndex: 10,
-                width: "44px",
-                height: "44px",
+                width: "46px",
+                height: "46px",
                 borderRadius: "50%",
-                background: "rgba(0,0,0,0.5)",
+                background: "rgba(255,255,255,0.92)",
                 backdropFilter: "blur(8px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "white",
+                border: "1px solid rgba(255,255,255,0.6)",
+                color: "#0f172a",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
               }}
             >
               <ChevronRight style={{ width: "20px", height: "20px" }} />
@@ -581,14 +641,14 @@ export function LandingPage() {
                 left: 0,
                 right: 0,
                 height: "4px",
-                background: "rgba(255,255,255,0.1)",
+                background: "rgba(255,255,255,0.2)",
                 zIndex: 10,
               }}
             >
               <div
                 style={{
                   height: "100%",
-                  background: "linear-gradient(90deg,#3b82f6,#8b5cf6)",
+                  background: "linear-gradient(90deg, #0369a1, #7c3aed)",
                   width: `${progressPct}%`,
                   transition: "width 0.5s ease",
                 }}
@@ -596,17 +656,17 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Thumbnail strip -- horizontal scroll */}
+          {/* Thumbnail strip */}
           <div
             ref={thumbsRef}
             style={{
               display: "flex",
               gap: "8px",
-              marginTop: "12px",
+              marginTop: "14px",
               overflowX: "auto",
               paddingBottom: "6px",
               scrollbarWidth: "thin",
-              scrollbarColor: "rgba(59,130,246,0.4) transparent",
+              scrollbarColor: "rgba(3,105,161,0.3) transparent",
             }}
           >
             {GALLERY_PHOTOS.map((photo, idx) => (
@@ -618,39 +678,52 @@ export function LandingPage() {
                 title={photo.caption}
                 style={{
                   flexShrink: 0,
-                  width: "88px",
-                  height: "58px",
-                  borderRadius: "8px",
+                  width: "90px",
+                  height: "60px",
+                  borderRadius: "10px",
                   overflow: "hidden",
                   border:
                     idx === activePhoto
-                      ? "2px solid #3b82f6"
-                      : "2px solid rgba(255,255,255,0.08)",
+                      ? "2.5px solid #0369a1"
+                      : "2px solid #e2e8f0",
                   cursor: "pointer",
                   padding: 0,
-                  background: "#1e3a5f",
+                  backgroundColor: photo.fallbackColor,
                   boxShadow:
                     idx === activePhoto
-                      ? "0 0 14px rgba(59,130,246,0.55)"
-                      : "none",
+                      ? "0 0 0 3px rgba(3,105,161,0.2), 0 4px 12px rgba(3,105,161,0.3)"
+                      : "0 1px 4px rgba(0,0,0,0.08)",
                   transition: "border-color 0.2s, box-shadow 0.2s",
                   position: "relative",
                 }}
               >
-                <img
-                  src={photo.src}
-                  alt={photo.caption}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display =
-                      "none";
-                  }}
-                />
+                {!imgErrors[idx] ? (
+                  <img
+                    src={photo.src}
+                    alt={photo.caption}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                    onError={() => handleImgError(idx)}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: `linear-gradient(135deg, ${photo.fallbackColor}, ${photo.fallbackColor}aa)`,
+                      fontSize: "18px",
+                    }}
+                  >
+                    🏢
+                  </div>
+                )}
                 <div
                   style={{
                     position: "absolute",
@@ -665,7 +738,7 @@ export function LandingPage() {
                       color: "white",
                       fontSize: "9px",
                       fontWeight: 700,
-                      background: "rgba(0,0,0,0.6)",
+                      background: "rgba(0,0,0,0.55)",
                       padding: "1px 5px",
                       borderRadius: "3px",
                     }}
@@ -678,7 +751,7 @@ export function LandingPage() {
                     style={{
                       position: "absolute",
                       inset: 0,
-                      background: "rgba(59,130,246,0.2)",
+                      background: "rgba(3,105,161,0.15)",
                     }}
                   />
                 )}
@@ -687,7 +760,7 @@ export function LandingPage() {
           </div>
           <p
             style={{
-              color: "#334155",
+              color: "#94a3b8",
               fontSize: "11px",
               marginTop: "5px",
               textAlign: "right",
@@ -710,43 +783,47 @@ export function LandingPage() {
             {
               label: "Total Items",
               value: "49",
-              color: "#3b82f6",
-              border: "#1d4ed8",
+              color: "#0369a1",
+              bg: "#dbeafe",
+              border: "#93c5fd",
             },
             {
               label: "Categories",
               value: "4",
-              color: "#8b5cf6",
-              border: "#6d28d9",
+              color: "#7c3aed",
+              bg: "#ede9fe",
+              border: "#c4b5fd",
             },
             {
               label: "Facility Photos",
               value: "22",
-              color: "#06b6d4",
-              border: "#0e7490",
+              color: "#0891b2",
+              bg: "#cffafe",
+              border: "#67e8f9",
             },
             {
               label: "Access Levels",
               value: "2",
-              color: "#10b981",
-              border: "#047857",
+              color: "#059669",
+              bg: "#d1fae5",
+              border: "#6ee7b7",
             },
           ].map((stat) => (
             <div
               key={stat.label}
               style={{
-                background: `rgba(${stat.color === "#3b82f6" ? "59,130,246" : stat.color === "#8b5cf6" ? "139,92,246" : stat.color === "#06b6d4" ? "6,182,212" : "16,185,129"},0.08)`,
-                border: `1px solid ${stat.color}30`,
-                borderTop: `3px solid ${stat.color}`,
-                borderRadius: "12px",
-                padding: "18px",
+                background: stat.bg,
+                border: `1px solid ${stat.border}`,
+                borderRadius: "14px",
+                padding: "20px",
                 textAlign: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
               }}
             >
               <div
                 style={{
                   color: stat.color,
-                  fontSize: "34px",
+                  fontSize: "36px",
                   fontWeight: 900,
                   lineHeight: 1,
                 }}
@@ -755,10 +832,11 @@ export function LandingPage() {
               </div>
               <div
                 style={{
-                  color: "#94a3b8",
+                  color: stat.color,
                   fontSize: "12px",
                   marginTop: "7px",
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  opacity: 0.75,
                 }}
               >
                 {stat.label}
@@ -780,14 +858,24 @@ export function LandingPage() {
           <div>
             <h2
               style={{
-                fontSize: "22px",
+                fontSize: "23px",
                 fontWeight: 800,
                 marginBottom: "20px",
                 letterSpacing: "-0.3px",
+                color: "#0f172a",
               }}
             >
               Everything You Need to{" "}
-              <span style={{ color: "#60a5fa" }}>Manage Stock</span>
+              <span
+                style={{
+                  background: "linear-gradient(90deg, #0369a1, #7c3aed)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Manage Stock
+              </span>
             </h2>
             <ul
               style={{
@@ -806,15 +894,16 @@ export function LandingPage() {
                     display: "flex",
                     alignItems: "center",
                     gap: "10px",
-                    color: "#cbd5e1",
+                    color: "#334155",
                     fontSize: "14px",
+                    fontWeight: 500,
                   }}
                 >
                   <CheckCircle2
                     style={{
-                      width: "16px",
-                      height: "16px",
-                      color: "#22c55e",
+                      width: "17px",
+                      height: "17px",
+                      color: "#059669",
                       flexShrink: 0,
                     }}
                   />
@@ -830,7 +919,7 @@ export function LandingPage() {
                 disabled={isLoggingIn}
                 data-ocid="hero.login.primary_button"
                 style={{
-                  background: "linear-gradient(135deg,#3b82f6,#8b5cf6)",
+                  background: "linear-gradient(135deg, #0369a1, #0891b2)",
                   color: "white",
                   border: "none",
                   borderRadius: "10px",
@@ -841,12 +930,15 @@ export function LandingPage() {
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
-                  boxShadow: "0 8px 28px rgba(59,130,246,0.4)",
+                  boxShadow: "0 6px 24px rgba(3,105,161,0.35)",
                   justifyContent: "center",
                 }}
               >
                 {isLoggingIn ? (
-                  <Loader2 style={{ width: "18px", height: "18px" }} />
+                  <Loader2
+                    style={{ width: "18px", height: "18px" }}
+                    className="animate-spin"
+                  />
                 ) : (
                   <LogIn style={{ width: "18px", height: "18px" }} />
                 )}
@@ -858,9 +950,9 @@ export function LandingPage() {
                 variant="outline"
                 data-ocid="hero.register.secondary_button"
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#93c5fd",
-                  border: "1px solid rgba(99,179,237,0.3)",
+                  background: "white",
+                  color: "#0369a1",
+                  border: "1.5px solid #bfdbfe",
                   borderRadius: "10px",
                   padding: "14px 28px",
                   fontSize: "14px",
@@ -870,6 +962,7 @@ export function LandingPage() {
                   alignItems: "center",
                   gap: "8px",
                   justifyContent: "center",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                 }}
               >
                 Request Staff Access
@@ -877,7 +970,7 @@ export function LandingPage() {
               </Button>
             </div>
             <p
-              style={{ color: "#334155", fontSize: "12px", marginTop: "10px" }}
+              style={{ color: "#94a3b8", fontSize: "12px", marginTop: "10px" }}
             >
               Staff access requires admin approval after registration
             </p>
@@ -895,20 +988,20 @@ export function LandingPage() {
               <div
                 key={f.title}
                 style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${f.accent}25`,
-                  borderLeft: `3px solid ${f.accent}`,
-                  borderRadius: "12px",
-                  padding: "18px",
-                  backdropFilter: "blur(8px)",
+                  background: "white",
+                  border: `1px solid ${f.bg}`,
+                  borderRadius: "14px",
+                  padding: "20px",
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                  transition: "box-shadow 0.2s, transform 0.2s",
                 }}
               >
                 <div
                   style={{
-                    width: "38px",
-                    height: "38px",
-                    borderRadius: "9px",
-                    background: `${f.accent}18`,
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "10px",
+                    background: f.bg,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -916,15 +1009,15 @@ export function LandingPage() {
                   }}
                 >
                   <f.icon
-                    style={{ width: "18px", height: "18px", color: f.accent }}
+                    style={{ width: "20px", height: "20px", color: f.accent }}
                   />
                 </div>
                 <div
                   style={{
-                    color: "white",
+                    color: "#0f172a",
                     fontWeight: 700,
                     fontSize: "13px",
-                    marginBottom: "5px",
+                    marginBottom: "6px",
                   }}
                 >
                   {f.title}
@@ -933,7 +1026,7 @@ export function LandingPage() {
                   style={{
                     color: "#64748b",
                     fontSize: "11px",
-                    lineHeight: 1.55,
+                    lineHeight: 1.6,
                   }}
                 >
                   {f.desc}
@@ -947,29 +1040,37 @@ export function LandingPage() {
       {/* Footer */}
       <footer
         style={{
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid #e2e8f0",
           padding: "18px 32px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          marginTop: "auto",
+          background: "white",
+          marginTop: "32px",
         }}
       >
-        <div style={{ color: "#334155", fontSize: "13px" }}>
+        <div style={{ color: "#64748b", fontSize: "13px" }}>
           © {new Date().getFullYear()} EBC Stock Management Tracker —{" "}
           <a
             href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
             rel="noreferrer"
-            style={{ color: "#3b82f6", textDecoration: "none" }}
+            style={{
+              color: "#0369a1",
+              textDecoration: "none",
+              fontWeight: 600,
+            }}
           >
-            Built on caffeine.ai
+            Built with ❤️ on caffeine.ai
           </a>
         </div>
-        <div style={{ color: "#1e293b", fontSize: "12px" }}>
+        <div style={{ color: "#94a3b8", fontSize: "12px", fontWeight: 500 }}>
           Secure · Enterprise-Ready · ICP Powered
         </div>
       </footer>
+
+      {/* Unused variable suppressor */}
+      <span style={{ display: "none" }}>{currentPhoto?.caption}</span>
     </div>
   );
 }
