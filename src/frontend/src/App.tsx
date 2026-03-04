@@ -1,12 +1,17 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Toaster } from "@/components/ui/sonner";
+import { useEffect, useState } from "react";
 import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useIsAdmin, useIsApproved } from "./hooks/useQueries";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { AdminLoginPanelPage } from "./pages/AdminLoginPanelPage";
+import { AppAdminPanelPage } from "./pages/AppAdminPanelPage";
 import { LandingPage } from "./pages/LandingPage";
+import { ManagerPanelPage } from "./pages/ManagerPanelPage";
 import { PendingApprovalPage } from "./pages/PendingApprovalPage";
 import { StaffDashboard } from "./pages/StaffDashboard";
+import { SupervisorPanelPage } from "./pages/SupervisorPanelPage";
 
 function AppLoader() {
   return (
@@ -35,7 +40,20 @@ function AppLoader() {
   );
 }
 
-export default function App() {
+function useHashRoute() {
+  const [hash, setHash] = useState(() =>
+    window.location.hash.replace(/^#/, ""),
+  );
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash.replace(/^#/, ""));
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+  return hash;
+}
+
+/** Inner component that holds all identity-dependent hooks (always mounted). */
+function AuthenticatedApp() {
   const { identity, isInitializing } = useInternetIdentity();
   const { isFetching: actorFetching } = useActor();
   const isAdminQuery = useIsAdmin();
@@ -91,4 +109,45 @@ export default function App() {
       <Toaster position="top-right" />
     </>
   );
+}
+
+export default function App() {
+  const hash = useHashRoute();
+
+  // Hash-based panel routing -- intercepts before identity checks
+  if (hash === "app-admin") {
+    return (
+      <>
+        <AppAdminPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+  if (hash === "admin-login") {
+    return (
+      <>
+        <AdminLoginPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+  if (hash === "manager") {
+    return (
+      <>
+        <ManagerPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+  if (hash === "supervisor") {
+    return (
+      <>
+        <SupervisorPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+
+  // Default: identity-based routing
+  return <AuthenticatedApp />;
 }

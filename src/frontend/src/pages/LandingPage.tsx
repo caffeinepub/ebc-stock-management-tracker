@@ -14,6 +14,124 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 
+// ─── Static imports – REQUIRED so the build pipeline keeps all 22 images ───
+import photo01 from "/assets/generated/corporate-photo-01.dim_1920x1080.jpg";
+import photo02 from "/assets/generated/corporate-photo-02.dim_1920x1080.jpg";
+import photo03 from "/assets/generated/corporate-photo-03.dim_1920x1080.jpg";
+import photo04 from "/assets/generated/corporate-photo-04.dim_1920x1080.jpg";
+import photo05 from "/assets/generated/corporate-photo-05.dim_1920x1080.jpg";
+import photo06 from "/assets/generated/corporate-photo-06.dim_1920x1080.jpg";
+import photo07 from "/assets/generated/corporate-photo-07.dim_1920x1080.jpg";
+import photo08 from "/assets/generated/corporate-photo-08.dim_1920x1080.jpg";
+import photo09 from "/assets/generated/corporate-photo-09.dim_1920x1080.jpg";
+import photo10 from "/assets/generated/corporate-photo-10.dim_1920x1080.jpg";
+import photo11 from "/assets/generated/corporate-photo-11.dim_1920x1080.jpg";
+import photo12 from "/assets/generated/corporate-photo-12.dim_1920x1080.jpg";
+import photo13 from "/assets/generated/corporate-photo-13.dim_1920x1080.jpg";
+import photo14 from "/assets/generated/corporate-photo-14.dim_1920x1080.jpg";
+import photo15 from "/assets/generated/corporate-photo-15.dim_1920x1080.jpg";
+import photo16 from "/assets/generated/corporate-photo-16.dim_1920x1080.jpg";
+import photo17 from "/assets/generated/corporate-photo-17.dim_1920x1080.jpg";
+import photo18 from "/assets/generated/corporate-photo-18.dim_1920x1080.jpg";
+import photo19 from "/assets/generated/corporate-photo-19.dim_1920x1080.jpg";
+import photo20 from "/assets/generated/corporate-photo-20.dim_1920x1080.jpg";
+import photo21 from "/assets/generated/corporate-photo-21.dim_1920x1080.jpg";
+import photo22 from "/assets/generated/corporate-photo-22.dim_1920x1080.jpg";
+
+// ─── Gallery Data ────────────────────────────────────────────────────────────
+const GALLERY_PHOTOS: {
+  src: string;
+  caption: string;
+  fallbackColor: string;
+}[] = [
+  {
+    src: photo01,
+    caption: "Corporate Reception Lobby",
+    fallbackColor: "#0f2640",
+  },
+  { src: photo02, caption: "Modern Conference Room", fallbackColor: "#0d2235" },
+  {
+    src: photo03,
+    caption: "Catering Steward – Food Service",
+    fallbackColor: "#1a2e1a",
+  },
+  {
+    src: photo04,
+    caption: "Steward Serving Coffee & Tea",
+    fallbackColor: "#2a1a0a",
+  },
+  {
+    src: photo05,
+    caption: "Open-Plan Office Workspace",
+    fallbackColor: "#1a1a2e",
+  },
+  { src: photo06, caption: "Business Team Meeting", fallbackColor: "#0d1a2a" },
+  {
+    src: photo07,
+    caption: "Elegant Corporate Dining Room",
+    fallbackColor: "#2a1e0d",
+  },
+  { src: photo08, caption: "Luxury Hotel Lobby", fallbackColor: "#1e1a2a" },
+  {
+    src: photo09,
+    caption: "Corporate Event Hall & Stage",
+    fallbackColor: "#0a1a2a",
+  },
+  {
+    src: photo10,
+    caption: "Premium Corporate Gift Hamper",
+    fallbackColor: "#2a1a1a",
+  },
+  {
+    src: photo11,
+    caption: "Premium Chocolate Assortment",
+    fallbackColor: "#1a0a0a",
+  },
+  {
+    src: photo12,
+    caption: "Assorted Premium Beverages",
+    fallbackColor: "#0a1a1a",
+  },
+  {
+    src: photo13,
+    caption: "Millet Snacks & Health Food",
+    fallbackColor: "#1a2a0a",
+  },
+  {
+    src: photo14,
+    caption: "Professional Stock Room",
+    fallbackColor: "#1a1a1a",
+  },
+  {
+    src: photo15,
+    caption: "Corporate Executive Office",
+    fallbackColor: "#0d1a30",
+  },
+  {
+    src: photo16,
+    caption: "Barista Preparing Coffee",
+    fallbackColor: "#1a0d0a",
+  },
+  { src: photo17, caption: "Luxury Hotel Corridor", fallbackColor: "#1e1a0d" },
+  { src: photo18, caption: "Premium Stationery Set", fallbackColor: "#0d0d1a" },
+  {
+    src: photo19,
+    caption: "Corporate Outdoor Terrace",
+    fallbackColor: "#0a1a0a",
+  },
+  {
+    src: photo20,
+    caption: "Corporate Building Exterior",
+    fallbackColor: "#0a0d1a",
+  },
+  { src: photo21, caption: "Catering Buffet Spread", fallbackColor: "#1a1a0a" },
+  {
+    src: photo22,
+    caption: "Corporate Award Ceremony",
+    fallbackColor: "#1a0a1a",
+  },
+];
+
 const FEATURES = [
   {
     icon: BarChart3,
@@ -53,120 +171,7 @@ const HIGHLIGHTS = [
   "Approval-based Access",
 ];
 
-// ALL 22 PHOTOS - verified paths
-const GALLERY_PHOTOS = [
-  {
-    src: "/assets/generated/corporate-reception-welcome.dim_800x500.jpg",
-    caption: "Corporate Reception",
-    fallbackColor: "#1e40af",
-  },
-  {
-    src: "/assets/generated/steward-serving-food.dim_800x500.jpg",
-    caption: "Food Service",
-    fallbackColor: "#065f46",
-  },
-  {
-    src: "/assets/generated/steward-coffee-serving.dim_800x500.jpg",
-    caption: "Coffee & Beverages",
-    fallbackColor: "#7c2d12",
-  },
-  {
-    src: "/assets/uploads/a35130edc8113b0b747ed58f84fa3f8c-1.jpg",
-    caption: "Analytics Meeting",
-    fallbackColor: "#1e3a5f",
-  },
-  {
-    src: "/assets/uploads/f1ab4e987c10c6a805c8292b83620e49-2.jpg",
-    caption: "Hotel Reception",
-    fallbackColor: "#3b0764",
-  },
-  {
-    src: "/assets/uploads/ba1827c7d0547371f27c8f379188d925-3.jpg",
-    caption: "Front Desk",
-    fallbackColor: "#134e4a",
-  },
-  {
-    src: "/assets/uploads/fe527d8561ded99212cb42b5b313bc1b-4.jpg",
-    caption: "Fine Dining",
-    fallbackColor: "#7f1d1d",
-  },
-  {
-    src: "/assets/uploads/2f75b4e0f037ca186c1efa418f124544-5.jpg",
-    caption: "Restaurant",
-    fallbackColor: "#1a2e4a",
-  },
-  {
-    src: "/assets/uploads/e1ab939c3419223e362707abfad25362-6.jpg",
-    caption: "Conference Room",
-    fallbackColor: "#14532d",
-  },
-  {
-    src: "/assets/uploads/918e6d9a5d992d5b249ea39d7dc21f93-1.jpg",
-    caption: "Corporate Meeting",
-    fallbackColor: "#1e3a5f",
-  },
-  {
-    src: "/assets/uploads/caf0639252273c4d59ab442b56c3439e-2.jpg",
-    caption: "Business Event",
-    fallbackColor: "#3b0764",
-  },
-  {
-    src: "/assets/uploads/3a97e432077c584da3c5cc96c50e2a42-3.jpg",
-    caption: "Office Setup",
-    fallbackColor: "#7c2d12",
-  },
-  {
-    src: "/assets/uploads/3fb97264e0c85024108afeb78301f75b-4.jpg",
-    caption: "Staff Service",
-    fallbackColor: "#134e4a",
-  },
-  {
-    src: "/assets/uploads/f304902a3cf36bd93b1a30f2de0668d8-5.jpg",
-    caption: "Hospitality",
-    fallbackColor: "#1e40af",
-  },
-  {
-    src: "/assets/uploads/bdcccc48aad3dc39ca9abbe1681dc6f8-6.jpg",
-    caption: "Corporate Dining",
-    fallbackColor: "#7f1d1d",
-  },
-  {
-    src: "/assets/uploads/96ae48f6901a48d4e006fe0fb4995d86-7.jpg",
-    caption: "Meeting Room",
-    fallbackColor: "#1a2e4a",
-  },
-  {
-    src: "/assets/uploads/d190d1185f5c06012534cdbd79d2f5a8-8.jpg",
-    caption: "Executive Suite",
-    fallbackColor: "#14532d",
-  },
-  {
-    src: "/assets/uploads/66dcc379d9beae160be9d5ba7e0418f3-9.jpg",
-    caption: "Event Setup",
-    fallbackColor: "#3b0764",
-  },
-  {
-    src: "/assets/uploads/5d0f9f5a963897972fe092e96daff47e-10.jpg",
-    caption: "Catering Service",
-    fallbackColor: "#7c2d12",
-  },
-  {
-    src: "/assets/uploads/5a3111edc7a074cd4cce18ca5fd05bd9-11.jpg",
-    caption: "Conference Hall",
-    fallbackColor: "#1e40af",
-  },
-  {
-    src: "/assets/uploads/IMG20260304012455-3.jpg",
-    caption: "Stock List",
-    fallbackColor: "#065f46",
-  },
-  {
-    src: "/assets/uploads/IMG20260304012503-1.jpg",
-    caption: "CRF Form",
-    fallbackColor: "#1e3a5f",
-  },
-];
-
+// ─── Component ───────────────────────────────────────────────────────────────
 export function LandingPage() {
   const { login, isLoggingIn } = useInternetIdentity();
   const [activePhoto, setActivePhoto] = useState(0);
@@ -181,15 +186,15 @@ export function LandingPage() {
     }, 4000);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: startAutoPlay is intentionally stable (ref-based, no deps)
   useEffect(() => {
-    autoPlayRef.current = setInterval(() => {
-      setActivePhoto((prev) => (prev + 1) % GALLERY_PHOTOS.length);
-    }, 4000);
+    startAutoPlay();
     return () => {
       if (autoPlayRef.current) clearInterval(autoPlayRef.current);
     };
   }, []);
 
+  // Scroll active thumbnail into view
   useEffect(() => {
     if (thumbsRef.current) {
       const thumb = thumbsRef.current.children[activePhoto] as HTMLElement;
@@ -227,7 +232,6 @@ export function LandingPage() {
   };
 
   const progressPct = ((activePhoto + 1) / GALLERY_PHOTOS.length) * 100;
-  const currentPhoto = GALLERY_PHOTOS[activePhoto];
 
   return (
     <div
@@ -248,7 +252,7 @@ export function LandingPage() {
         }}
       />
 
-      {/* Header */}
+      {/* ─── Header ─────────────────────────────────────────────────────────── */}
       <header
         style={{
           display: "flex",
@@ -333,6 +337,7 @@ export function LandingPage() {
         </div>
       </header>
 
+      {/* ─── Main Content ────────────────────────────────────────────────────── */}
       <div
         style={{
           maxWidth: "1280px",
@@ -415,8 +420,9 @@ export function LandingPage() {
           </p>
         </div>
 
-        {/* ===== PHOTO GALLERY ===== */}
+        {/* ─── PHOTO GALLERY ──────────────────────────────────────────────────── */}
         <div style={{ marginBottom: "52px" }}>
+          {/* Gallery header */}
           <div
             style={{
               display: "flex",
@@ -458,7 +464,7 @@ export function LandingPage() {
             </span>
           </div>
 
-          {/* Main carousel */}
+          {/* ── Main carousel frame ──────────────────────────────────────────── */}
           <div
             style={{
               position: "relative",
@@ -477,12 +483,11 @@ export function LandingPage() {
                   position: "absolute",
                   inset: 0,
                   opacity: idx === activePhoto ? 1 : 0,
-                  transition: "opacity 0.55s ease-in-out",
+                  transition: "opacity 0.6s ease-in-out",
                   zIndex: idx === activePhoto ? 2 : 1,
                   backgroundColor: photo.fallbackColor,
                 }}
               >
-                {/* Always render img — fallback color on container handles failed loads */}
                 {!imgErrors[idx] ? (
                   <img
                     src={photo.src}
@@ -496,7 +501,6 @@ export function LandingPage() {
                     onError={() => handleImgError(idx)}
                   />
                 ) : (
-                  /* Styled placeholder for failed images */
                   <div
                     style={{
                       width: "100%",
@@ -532,6 +536,7 @@ export function LandingPage() {
                     pointerEvents: "none",
                   }}
                 />
+
                 {/* Caption */}
                 <div
                   style={{
@@ -556,6 +561,7 @@ export function LandingPage() {
                     {photo.caption}
                   </span>
                 </div>
+
                 {/* Index badge */}
                 <div
                   style={{
@@ -577,11 +583,12 @@ export function LandingPage() {
               </div>
             ))}
 
-            {/* Prev */}
+            {/* Prev arrow */}
             <button
               type="button"
               onClick={goToPrev}
               data-ocid="gallery.pagination_prev"
+              aria-label="Previous photo"
               style={{
                 position: "absolute",
                 left: "14px",
@@ -605,11 +612,12 @@ export function LandingPage() {
               <ChevronLeft style={{ width: "20px", height: "20px" }} />
             </button>
 
-            {/* Next */}
+            {/* Next arrow */}
             <button
               type="button"
               onClick={goToNext}
               data-ocid="gallery.pagination_next"
+              aria-label="Next photo"
               style={{
                 position: "absolute",
                 right: "14px",
@@ -656,7 +664,7 @@ export function LandingPage() {
             </div>
           </div>
 
-          {/* Thumbnail strip */}
+          {/* ── Thumbnail strip ──────────────────────────────────────────────── */}
           <div
             ref={thumbsRef}
             style={{
@@ -676,10 +684,12 @@ export function LandingPage() {
                 onClick={() => goToPhoto(idx)}
                 data-ocid={`gallery.item.${idx + 1}`}
                 title={photo.caption}
+                aria-label={`Go to photo ${idx + 1}: ${photo.caption}`}
+                aria-pressed={idx === activePhoto}
                 style={{
                   flexShrink: 0,
-                  width: "90px",
-                  height: "60px",
+                  width: "96px",
+                  height: "64px",
                   borderRadius: "10px",
                   overflow: "hidden",
                   border:
@@ -693,7 +703,8 @@ export function LandingPage() {
                     idx === activePhoto
                       ? "0 0 0 3px rgba(3,105,161,0.2), 0 4px 12px rgba(3,105,161,0.3)"
                       : "0 1px 4px rgba(0,0,0,0.08)",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
+                  transition:
+                    "border-color 0.2s, box-shadow 0.2s, transform 0.15s",
                   position: "relative",
                 }}
               >
@@ -724,6 +735,8 @@ export function LandingPage() {
                     🏢
                   </div>
                 )}
+
+                {/* Thumbnail number badge */}
                 <div
                   style={{
                     position: "absolute",
@@ -746,18 +759,22 @@ export function LandingPage() {
                     {idx + 1}
                   </span>
                 </div>
+
+                {/* Active highlight overlay */}
                 {idx === activePhoto && (
                   <div
                     style={{
                       position: "absolute",
                       inset: 0,
                       background: "rgba(3,105,161,0.15)",
+                      pointerEvents: "none",
                     }}
                   />
                 )}
               </button>
             ))}
           </div>
+
           <p
             style={{
               color: "#94a3b8",
@@ -770,7 +787,7 @@ export function LandingPage() {
           </p>
         </div>
 
-        {/* Stats Row */}
+        {/* ─── Stats Row ───────────────────────────────────────────────────────── */}
         <div
           style={{
             display: "grid",
@@ -796,7 +813,7 @@ export function LandingPage() {
             },
             {
               label: "Facility Photos",
-              value: "22",
+              value: String(GALLERY_PHOTOS.length),
               color: "#0891b2",
               bg: "#cffafe",
               border: "#67e8f9",
@@ -845,7 +862,7 @@ export function LandingPage() {
           ))}
         </div>
 
-        {/* Bottom: Highlights + CTA + Features */}
+        {/* ─── Bottom: Highlights + CTA + Feature Cards ───────────────────────── */}
         <div
           style={{
             display: "grid",
@@ -854,7 +871,7 @@ export function LandingPage() {
             alignItems: "start",
           }}
         >
-          {/* Left */}
+          {/* Left column */}
           <div>
             <h2
               style={{
@@ -877,6 +894,7 @@ export function LandingPage() {
                 Manage Stock
               </span>
             </h2>
+
             <ul
               style={{
                 listStyle: "none",
@@ -911,6 +929,7 @@ export function LandingPage() {
                 </li>
               ))}
             </ul>
+
             <div
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
@@ -944,6 +963,7 @@ export function LandingPage() {
                 )}
                 {isLoggingIn ? "Connecting..." : "Login with Internet Identity"}
               </Button>
+
               <Button
                 onClick={login}
                 disabled={isLoggingIn}
@@ -969,6 +989,7 @@ export function LandingPage() {
                 <ArrowRight style={{ width: "15px", height: "15px" }} />
               </Button>
             </div>
+
             <p
               style={{ color: "#94a3b8", fontSize: "12px", marginTop: "10px" }}
             >
@@ -976,7 +997,7 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* Right: Feature cards */}
+          {/* Right column: feature cards */}
           <div
             style={{
               display: "grid",
@@ -1037,7 +1058,620 @@ export function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
+      {/* ─── Corporate Access Panels ─────────────────────────────────────────── */}
+      <div
+        data-ocid="access-panels.section"
+        style={{
+          maxWidth: "1280px",
+          margin: "0 auto 0",
+          padding: "0 24px 64px",
+        }}
+      >
+        {/* Section header */}
+        <div style={{ textAlign: "center", marginBottom: "36px" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "7px 22px",
+              borderRadius: "50px",
+              background: "linear-gradient(135deg, #0f2044, #1a1060)",
+              border: "1px solid rgba(59,130,246,0.3)",
+              marginBottom: "16px",
+            }}
+          >
+            <span
+              style={{
+                width: "7px",
+                height: "7px",
+                borderRadius: "50%",
+                background: "#3b82f6",
+                display: "inline-block",
+                boxShadow: "0 0 0 3px rgba(59,130,246,0.3)",
+              }}
+            />
+            <span
+              style={{
+                color: "#93c5fd",
+                fontWeight: 700,
+                fontSize: "12px",
+                letterSpacing: "1px",
+                textTransform: "uppercase",
+              }}
+            >
+              Role-Based Access System
+            </span>
+          </div>
+          <h2
+            style={{
+              fontSize: "clamp(22px, 3vw, 34px)",
+              fontWeight: 900,
+              margin: "0 0 10px",
+              letterSpacing: "-0.4px",
+              color: "#0f172a",
+            }}
+          >
+            Corporate{" "}
+            <span
+              style={{
+                background: "linear-gradient(90deg, #0369a1, #7c3aed)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Access Panels
+            </span>
+          </h2>
+          <p
+            style={{
+              color: "#64748b",
+              fontSize: "15px",
+              maxWidth: "480px",
+              margin: "0 auto",
+              lineHeight: 1.6,
+            }}
+          >
+            Separate secure portals for each role. Select your access level
+            below to proceed with independent authentication.
+          </p>
+        </div>
+
+        {/* 4 access cards */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gap: "20px",
+          }}
+        >
+          {/* Card 1: Application Admin Panel */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = "app-admin";
+            }}
+            data-ocid="access-panels.app-admin.button"
+            style={{
+              background:
+                "linear-gradient(160deg, #0a1628 0%, #0f2044 60%, #1a1060 100%)",
+              border: "1px solid rgba(59,130,246,0.25)",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: "#e2e8f0",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(59,130,246,0.1)",
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-4px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 16px 48px rgba(0,0,0,0.2), 0 4px 16px rgba(59,130,246,0.25)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(59,130,246,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(59,130,246,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(59,130,246,0.25)";
+            }}
+          >
+            {/* Glow effect */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(59,130,246,0.12)",
+                filter: "blur(30px)",
+                pointerEvents: "none",
+              }}
+            />
+            {/* Icon */}
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "26px",
+                marginBottom: "18px",
+                boxShadow: "0 6px 18px rgba(59,130,246,0.4)",
+              }}
+            >
+              🛡️
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span
+                style={{
+                  background: "rgba(59,130,246,0.2)",
+                  border: "1px solid rgba(59,130,246,0.3)",
+                  color: "#93c5fd",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Full Access
+              </span>
+            </div>
+            <h3
+              style={{
+                fontWeight: 800,
+                fontSize: "18px",
+                color: "#f1f5f9",
+                margin: "8px 0 8px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              Application Admin Panel
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Full monitoring, user approval management, role assignment and
+              real-time data visibility.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "20px",
+                color: "#93c5fd",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              <span>Access Panel</span>
+              <span style={{ fontSize: "16px" }}>→</span>
+            </div>
+          </button>
+
+          {/* Card 2: Admin Login Panel */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = "admin-login";
+            }}
+            data-ocid="access-panels.admin-login.button"
+            style={{
+              background:
+                "linear-gradient(160deg, #0c1a14 0%, #0a2010 60%, #061a30 100%)",
+              border: "1px solid rgba(5,150,105,0.25)",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: "#e2e8f0",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(5,150,105,0.1)",
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-4px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 16px 48px rgba(0,0,0,0.2), 0 4px 16px rgba(5,150,105,0.25)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(5,150,105,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(5,150,105,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(5,150,105,0.25)";
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(5,150,105,0.12)",
+                filter: "blur(30px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #059669, #0891b2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "26px",
+                marginBottom: "18px",
+                boxShadow: "0 6px 18px rgba(5,150,105,0.4)",
+              }}
+            >
+              🔐
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span
+                style={{
+                  background: "rgba(5,150,105,0.2)",
+                  border: "1px solid rgba(5,150,105,0.3)",
+                  color: "#6ee7b7",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Admin Access
+              </span>
+            </div>
+            <h3
+              style={{
+                fontWeight: 800,
+                fontSize: "18px",
+                color: "#f1f5f9",
+                margin: "8px 0 8px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              Admin Login Panel
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Secure login with dashboard overview, reports access and analytics
+              for administrators.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "20px",
+                color: "#6ee7b7",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              <span>Access Panel</span>
+              <span style={{ fontSize: "16px" }}>→</span>
+            </div>
+          </button>
+
+          {/* Card 3: Manager Access Panel */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = "manager";
+            }}
+            data-ocid="access-panels.manager.button"
+            style={{
+              background:
+                "linear-gradient(160deg, #1a0d2e 0%, #150a28 60%, #0a1628 100%)",
+              border: "1px solid rgba(124,58,237,0.25)",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: "#e2e8f0",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(124,58,237,0.1)",
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-4px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 16px 48px rgba(0,0,0,0.2), 0 4px 16px rgba(124,58,237,0.25)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(124,58,237,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(124,58,237,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(124,58,237,0.25)";
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(124,58,237,0.12)",
+                filter: "blur(30px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "26px",
+                marginBottom: "18px",
+                boxShadow: "0 6px 18px rgba(124,58,237,0.4)",
+              }}
+            >
+              💼
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span
+                style={{
+                  background: "rgba(124,58,237,0.2)",
+                  border: "1px solid rgba(124,58,237,0.3)",
+                  color: "#c4b5fd",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Manager Access
+              </span>
+            </div>
+            <h3
+              style={{
+                fontWeight: 800,
+                fontSize: "18px",
+                color: "#f1f5f9",
+                margin: "8px 0 8px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              Manager Access Panel
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Room-wise food consumption tracking, staff monitoring and daily
+              report submission.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "20px",
+                color: "#c4b5fd",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              <span>Access Panel</span>
+              <span style={{ fontSize: "16px" }}>→</span>
+            </div>
+          </button>
+
+          {/* Card 4: Supervisor Access Panel */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = "supervisor";
+            }}
+            data-ocid="access-panels.supervisor.button"
+            style={{
+              background:
+                "linear-gradient(160deg, #0a1a10 0%, #0c1e18 60%, #0a1628 100%)",
+              border: "1px solid rgba(217,119,6,0.25)",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: "#e2e8f0",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(217,119,6,0.1)",
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-4px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 16px 48px rgba(0,0,0,0.2), 0 4px 16px rgba(217,119,6,0.25)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(217,119,6,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(217,119,6,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(217,119,6,0.25)";
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(217,119,6,0.12)",
+                filter: "blur(30px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #d97706, #f59e0b)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "26px",
+                marginBottom: "18px",
+                boxShadow: "0 6px 18px rgba(217,119,6,0.4)",
+              }}
+            >
+              📋
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span
+                style={{
+                  background: "rgba(217,119,6,0.2)",
+                  border: "1px solid rgba(217,119,6,0.3)",
+                  color: "#fcd34d",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Supervisor Access
+              </span>
+            </div>
+            <h3
+              style={{
+                fontWeight: 800,
+                fontSize: "18px",
+                color: "#f1f5f9",
+                margin: "8px 0 8px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              Supervisor Access Panel
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              Live service updates, stock entry management and real-time task
+              status updates.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "20px",
+                color: "#fcd34d",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              <span>Access Panel</span>
+              <span style={{ fontSize: "16px" }}>→</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Security note bar */}
+        <div
+          style={{
+            marginTop: "24px",
+            padding: "14px 20px",
+            background:
+              "linear-gradient(135deg, rgba(15,32,68,0.6), rgba(26,16,96,0.4))",
+            border: "1px solid rgba(59,130,246,0.2)",
+            borderRadius: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+          }}
+        >
+          <span style={{ fontSize: "18px" }}>🔒</span>
+          <div style={{ color: "#64748b", fontSize: "12px", lineHeight: 1.5 }}>
+            <span style={{ color: "#93c5fd", fontWeight: 700 }}>
+              Security Notice:{" "}
+            </span>
+            Each panel maintains independent authentication. Cross-role access
+            is strictly prohibited. All login attempts are logged for security
+            compliance.
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Footer ──────────────────────────────────────────────────────────── */}
       <footer
         style={{
           borderTop: "1px solid #e2e8f0",
@@ -1068,9 +1702,6 @@ export function LandingPage() {
           Secure · Enterprise-Ready · ICP Powered
         </div>
       </footer>
-
-      {/* Unused variable suppressor */}
-      <span style={{ display: "none" }}>{currentPhoto?.caption}</span>
     </div>
   );
 }
