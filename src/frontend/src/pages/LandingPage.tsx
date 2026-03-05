@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { FacilityBookingSection } from "./FacilityBookingSection";
 
 // ─── Static imports – REQUIRED so the build pipeline keeps all 22 images ───
 import photo01 from "/assets/generated/corporate-photo-01.dim_1920x1080.jpg";
@@ -194,17 +195,19 @@ export function LandingPage() {
     };
   }, []);
 
-  // Scroll active thumbnail into view
+  // Scroll active thumbnail into view — only scrolls the thumbnail strip horizontally,
+  // never moves the page vertically, preventing auto-jump on booking pages.
   useEffect(() => {
-    if (thumbsRef.current) {
-      const thumb = thumbsRef.current.children[activePhoto] as HTMLElement;
-      if (thumb)
-        thumb.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-          inline: "center",
-        });
-    }
+    const container = thumbsRef.current;
+    if (!container) return;
+    const thumb = container.children[activePhoto] as HTMLElement;
+    if (!thumb) return;
+    const containerWidth = container.clientWidth;
+    const thumbLeft = thumb.offsetLeft;
+    const thumbWidth = thumb.offsetWidth;
+    // Center the thumb inside the container using scrollLeft only
+    const targetScrollLeft = thumbLeft - containerWidth / 2 + thumbWidth / 2;
+    container.scrollTo({ left: targetScrollLeft, behavior: "smooth" });
   }, [activePhoto]);
 
   const goToPrev = () => {
@@ -1670,6 +1673,8 @@ export function LandingPage() {
           </div>
         </div>
       </div>
+
+      <FacilityBookingSection />
 
       {/* ─── Footer ──────────────────────────────────────────────────────────── */}
       <footer

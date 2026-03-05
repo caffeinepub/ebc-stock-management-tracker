@@ -18,6 +18,23 @@ export const UserRole = IDL.Variant({
   'guest' : IDL.Null,
 });
 export const Time = IDL.Int;
+export const BookingRequest = IDL.Record({
+  'id' : IDL.Text,
+  'startTime' : IDL.Text,
+  'status' : IDL.Text,
+  'contact' : IDL.Text,
+  'endTime' : IDL.Text,
+  'date' : IDL.Text,
+  'designation' : IDL.Text,
+  'createdAt' : Time,
+  'room' : IDL.Text,
+  'bookingPurpose' : IDL.Text,
+  'submittedBy' : IDL.Text,
+  'organizerName' : IDL.Text,
+  'notes' : IDL.Text,
+  'bookingType' : IDL.Text,
+  'eventName' : IDL.Text,
+});
 export const StockEntry = IDL.Record({
   'id' : IDL.Nat,
   'itemId' : IDL.Nat,
@@ -30,12 +47,48 @@ export const StockEntry = IDL.Record({
   'balanceQty' : IDL.Nat,
   'roomId' : IDL.Nat,
 });
+export const RegStatus = IDL.Variant({
+  'pending' : IDL.Null,
+  'approved' : IDL.Null,
+  'rejected' : IDL.Null,
+});
+export const RegRequest = IDL.Record({
+  'id' : IDL.Text,
+  'status' : RegStatus,
+  'name' : IDL.Text,
+  'role' : IDL.Text,
+  'tempUserId' : IDL.Text,
+  'submittedAt' : Time,
+  'email' : IDL.Text,
+  'mobile' : IDL.Text,
+  'tempPassword' : IDL.Text,
+});
+export const StockApprovalRequest = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'role' : IDL.Text,
+  'submittedAt' : Time,
+  'description' : IDL.Text,
+  'dataType' : IDL.Text,
+  'requestedByName' : IDL.Text,
+});
 export const Item = IDL.Record({
   'id' : IDL.Nat,
   'stockQty' : IDL.Nat,
   'name' : IDL.Text,
   'createdAt' : Time,
   'category' : ItemCategory,
+});
+export const Notification = IDL.Record({
+  'id' : IDL.Text,
+  'title' : IDL.Text,
+  'recipientKey' : IDL.Text,
+  'notificationType' : IDL.Text,
+  'createdAt' : Time,
+  'credentialsUserId' : IDL.Text,
+  'isRead' : IDL.Bool,
+  'credentialsPassword' : IDL.Text,
+  'message' : IDL.Text,
 });
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
@@ -52,11 +105,24 @@ export const Room = IDL.Record({
   'createdAt' : Time,
   'description' : IDL.Text,
 });
+export const ApprovedUserRecord = IDL.Record({
+  'status' : IDL.Text,
+  'name' : IDL.Text,
+  'createdAt' : Time,
+  'role' : IDL.Text,
+  'tempUserId' : IDL.Text,
+  'email' : IDL.Text,
+  'mobile' : IDL.Text,
+  'tempPassword' : IDL.Text,
+});
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addItem' : IDL.Func([IDL.Text, ItemCategory, IDL.Nat], [IDL.Nat], []),
   'addRoom' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'approveBookingRequest' : IDL.Func([IDL.Text], [], []),
+  'approveRegistration' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'approveStockApprovalRequest' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createStockEntry' : IDL.Func(
       [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Text, Time],
@@ -66,7 +132,14 @@ export const idlService = IDL.Service({
   'deleteItem' : IDL.Func([IDL.Nat], [], []),
   'deleteRoom' : IDL.Func([IDL.Nat], [], []),
   'deleteStockEntry' : IDL.Func([IDL.Nat], [], []),
+  'getAllBookingRequests' : IDL.Func([], [IDL.Vec(BookingRequest)], ['query']),
   'getAllEntries' : IDL.Func([], [IDL.Vec(StockEntry)], ['query']),
+  'getAllRegistrationRequests' : IDL.Func([], [IDL.Vec(RegRequest)], ['query']),
+  'getAllStockApprovalRequests' : IDL.Func(
+      [],
+      [IDL.Vec(StockApprovalRequest)],
+      ['query'],
+    ),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getDashboardStats' : IDL.Func(
       [],
@@ -80,13 +153,62 @@ export const idlService = IDL.Service({
     ),
   'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
   'getMyEntries' : IDL.Func([], [IDL.Vec(StockEntry)], ['query']),
+  'getNotificationsForRecipient' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(Notification)],
+      ['query'],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
   'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
+  'loginWithCredentials' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [IDL.Opt(ApprovedUserRecord)],
+      ['query'],
+    ),
+  'markAllNotificationsReadForRecipient' : IDL.Func([IDL.Text], [], []),
+  'markNotificationRead' : IDL.Func([IDL.Text], [], []),
   'prefilledItems' : IDL.Func([IDL.Vec(Item), IDL.Vec(Item)], [], []),
+  'rejectBookingRequest' : IDL.Func([IDL.Text], [], []),
+  'rejectRegistration' : IDL.Func([IDL.Text], [], []),
+  'rejectStockApprovalRequest' : IDL.Func([IDL.Text], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'storeNotification' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [IDL.Text],
+      [],
+    ),
+  'submitBookingRequest' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [],
+      [],
+    ),
+  'submitRegistration' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
+  'submitStockApprovalRequest' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
   'updateItem' : IDL.Func([IDL.Nat, IDL.Text, ItemCategory, IDL.Nat], [], []),
   'updateRoom' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
   'updateStockEntry' : IDL.Func(
@@ -109,6 +231,23 @@ export const idlFactory = ({ IDL }) => {
     'guest' : IDL.Null,
   });
   const Time = IDL.Int;
+  const BookingRequest = IDL.Record({
+    'id' : IDL.Text,
+    'startTime' : IDL.Text,
+    'status' : IDL.Text,
+    'contact' : IDL.Text,
+    'endTime' : IDL.Text,
+    'date' : IDL.Text,
+    'designation' : IDL.Text,
+    'createdAt' : Time,
+    'room' : IDL.Text,
+    'bookingPurpose' : IDL.Text,
+    'submittedBy' : IDL.Text,
+    'organizerName' : IDL.Text,
+    'notes' : IDL.Text,
+    'bookingType' : IDL.Text,
+    'eventName' : IDL.Text,
+  });
   const StockEntry = IDL.Record({
     'id' : IDL.Nat,
     'itemId' : IDL.Nat,
@@ -121,12 +260,48 @@ export const idlFactory = ({ IDL }) => {
     'balanceQty' : IDL.Nat,
     'roomId' : IDL.Nat,
   });
+  const RegStatus = IDL.Variant({
+    'pending' : IDL.Null,
+    'approved' : IDL.Null,
+    'rejected' : IDL.Null,
+  });
+  const RegRequest = IDL.Record({
+    'id' : IDL.Text,
+    'status' : RegStatus,
+    'name' : IDL.Text,
+    'role' : IDL.Text,
+    'tempUserId' : IDL.Text,
+    'submittedAt' : Time,
+    'email' : IDL.Text,
+    'mobile' : IDL.Text,
+    'tempPassword' : IDL.Text,
+  });
+  const StockApprovalRequest = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'role' : IDL.Text,
+    'submittedAt' : Time,
+    'description' : IDL.Text,
+    'dataType' : IDL.Text,
+    'requestedByName' : IDL.Text,
+  });
   const Item = IDL.Record({
     'id' : IDL.Nat,
     'stockQty' : IDL.Nat,
     'name' : IDL.Text,
     'createdAt' : Time,
     'category' : ItemCategory,
+  });
+  const Notification = IDL.Record({
+    'id' : IDL.Text,
+    'title' : IDL.Text,
+    'recipientKey' : IDL.Text,
+    'notificationType' : IDL.Text,
+    'createdAt' : Time,
+    'credentialsUserId' : IDL.Text,
+    'isRead' : IDL.Bool,
+    'credentialsPassword' : IDL.Text,
+    'message' : IDL.Text,
   });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
@@ -143,11 +318,24 @@ export const idlFactory = ({ IDL }) => {
     'createdAt' : Time,
     'description' : IDL.Text,
   });
+  const ApprovedUserRecord = IDL.Record({
+    'status' : IDL.Text,
+    'name' : IDL.Text,
+    'createdAt' : Time,
+    'role' : IDL.Text,
+    'tempUserId' : IDL.Text,
+    'email' : IDL.Text,
+    'mobile' : IDL.Text,
+    'tempPassword' : IDL.Text,
+  });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addItem' : IDL.Func([IDL.Text, ItemCategory, IDL.Nat], [IDL.Nat], []),
     'addRoom' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'approveBookingRequest' : IDL.Func([IDL.Text], [], []),
+    'approveRegistration' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'approveStockApprovalRequest' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createStockEntry' : IDL.Func(
         [IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Nat, IDL.Text, Time],
@@ -157,7 +345,22 @@ export const idlFactory = ({ IDL }) => {
     'deleteItem' : IDL.Func([IDL.Nat], [], []),
     'deleteRoom' : IDL.Func([IDL.Nat], [], []),
     'deleteStockEntry' : IDL.Func([IDL.Nat], [], []),
+    'getAllBookingRequests' : IDL.Func(
+        [],
+        [IDL.Vec(BookingRequest)],
+        ['query'],
+      ),
     'getAllEntries' : IDL.Func([], [IDL.Vec(StockEntry)], ['query']),
+    'getAllRegistrationRequests' : IDL.Func(
+        [],
+        [IDL.Vec(RegRequest)],
+        ['query'],
+      ),
+    'getAllStockApprovalRequests' : IDL.Func(
+        [],
+        [IDL.Vec(StockApprovalRequest)],
+        ['query'],
+      ),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getDashboardStats' : IDL.Func(
         [],
@@ -171,13 +374,62 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getItemsByCategory' : IDL.Func([ItemCategory], [IDL.Vec(Item)], ['query']),
     'getMyEntries' : IDL.Func([], [IDL.Vec(StockEntry)], ['query']),
+    'getNotificationsForRecipient' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(Notification)],
+        ['query'],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
     'listRooms' : IDL.Func([], [IDL.Vec(Room)], ['query']),
+    'loginWithCredentials' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Opt(ApprovedUserRecord)],
+        ['query'],
+      ),
+    'markAllNotificationsReadForRecipient' : IDL.Func([IDL.Text], [], []),
+    'markNotificationRead' : IDL.Func([IDL.Text], [], []),
     'prefilledItems' : IDL.Func([IDL.Vec(Item), IDL.Vec(Item)], [], []),
+    'rejectBookingRequest' : IDL.Func([IDL.Text], [], []),
+    'rejectRegistration' : IDL.Func([IDL.Text], [], []),
+    'rejectStockApprovalRequest' : IDL.Func([IDL.Text], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'storeNotification' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [IDL.Text],
+        [],
+      ),
+    'submitBookingRequest' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [],
+        [],
+      ),
+    'submitRegistration' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
+    'submitStockApprovalRequest' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'updateItem' : IDL.Func([IDL.Nat, IDL.Text, ItemCategory, IDL.Nat], [], []),
     'updateRoom' : IDL.Func([IDL.Nat, IDL.Text, IDL.Text], [], []),
     'updateStockEntry' : IDL.Func(

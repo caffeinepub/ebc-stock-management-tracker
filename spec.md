@@ -1,49 +1,38 @@
 # EBC Stock Management Tracker
 
 ## Current State
-No existing code. Fresh build required.
+
+The app has a full backend canister with:
+- `submitRegistration` (open, no auth) -- registration requests saved to backend
+- `submitBookingRequest` (requires `UserApproval.isApproved`) -- THIS IS THE BUG: anonymous users cannot submit bookings
+- `getAllBookingRequests` (admin-only) -- returns all booking requests
+- `getAllRegistrationRequests` (admin-only) -- returns all registration requests
+- `approveBookingRequest` / `rejectBookingRequest` -- admin-only
+- `approveRegistration` / `rejectRegistration` -- admin-only
+
+The AdminDashboardStandalone has:
+- "Bookings" tab with a "PENDING APPROVAL REQUESTS" section that fetches from backend
+- "Registrations" tab with RegistrationRequestsPanel
+- Both poll every 3 seconds
+
+The issue: `submitBookingRequest` requires `UserApproval.isApproved(approvalState, caller)` which checks ICP principal-based approval. Users submit bookings anonymously (no Internet Identity) so this check always fails. Bookings never reach the backend and never appear in admin dashboard.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full app: EBC Stock Management Tracker (formerly ConferStock Elite)
-- Home page with image carousel/gallery (9+ corporate photos: steward serving food, coffee service, corporate reception, conference rooms, meetings)
-- Admin Login Panel (separate from staff login, email + password, role-based)
-- Staff Registration System (temporary registration form, pending approval workflow)
-- Admin Approval Dashboard (approve/reject pending users, generate credentials)
-- Role-Based Access: Admin vs Staff
-- Stock Management (items list with two categories)
-- Conference room tracking
-- Admin Dashboard with summary cards, analytics charts, stock table, quick actions
+- Nothing new to add -- the system is architecturally correct
 
 ### Modify
-- N/A (new project)
+- **Backend `submitBookingRequest`**: Remove the `UserApproval.isApproved` check. Booking requests should be publicly submittable (anyone can submit, admin approves/rejects). The admin approval system is the gatekeeping -- not the submission.
+- **Backend `submitStockApprovalRequest`**: Same fix -- remove the approval check so stock requests can also be submitted publicly.
+- **AdminDashboardStandalone**: Add a unified "PENDING APPROVAL REQUESTS" section at the top of the Bookings tab that also shows pending registration requests inline, so admin sees ALL pending requests (registrations + bookings) in one place. Each shows user name, role, request type, details, date/time, and APPROVE/REJECT buttons.
 
 ### Remove
-- N/A (new project)
+- Nothing to remove
 
 ## Implementation Plan
 
-### Backend (Motoko)
-- User model: { id, name, email, mobile, department, role, status (Pending/Approved/Rejected), passwordHash, registrationDate }
-- Admin functions: getUsers, approveUser, rejectUser, createAdmin
-- Staff functions: registerRequest, login, getStockItems
-- Stock model: { id, name, category, available, closing, balance, room, staff, date }
-- StockItem categories: Gifts/Stationery (25 items) and Beverages/Snacks (24 items)
-- Conference room model: { id, name }
-- Seed data: 49 stock items pre-loaded, default admin account
-
-### Frontend Pages
-1. **Home Page** -- App name header, image carousel with 9+ photos (auto-cycle), welcome message, two login buttons (Admin Login / Staff Login)
-2. **Admin Login Page** -- Email/password form, secure badge, role verification
-3. **Staff Registration Page** -- Full name, email, mobile, department, role=Staff, submit → Pending Approval message
-4. **Staff Login Page** -- Email/password, shows "Your account is not yet approved by Admin." if pending/rejected
-5. **Admin Dashboard** -- 4 summary cards (rooms, stock items, available, balance), bar/line/pie charts, pending user approval panel with approve/reject buttons, stock management table (Room/Item/Available/Closing/Balance/Staff/Date), quick action buttons
-6. **Staff Dashboard** -- Stock items list by category, ability to update quantities
-
-### UI Design
-- Corporate professional: blue, white, grey palette
-- Rounded cards with soft shadows
-- Top nav bar: app logo left, admin profile icon + notification bell + logout right
-- Premium typography, smooth transitions
-- Responsive layout
+1. Fix `main.mo`: Change `submitBookingRequest` to not require `UserApproval.isApproved` -- make it open/public (no auth check, any caller can submit).
+2. Fix `main.mo`: Change `submitStockApprovalRequest` similarly.
+3. Update `AdminDashboardStandalone.tsx`: Add a top-level "PENDING APPROVAL REQUESTS" consolidated section that shows both pending registrations and pending backend bookings together, with full details and APPROVE/REJECT for each. This section shows across all tabs for clarity, or is prominently featured in the Bookings/Overview tab.
+4. The existing RegistrationRequestsPanel and BookingRequests panels stay intact -- the new section is additive.

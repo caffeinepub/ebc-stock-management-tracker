@@ -5,6 +5,7 @@ import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useIsAdmin, useIsApproved } from "./hooks/useQueries";
 import { AdminDashboard } from "./pages/AdminDashboard";
+import { AdminDashboardStandalone } from "./pages/AdminDashboardStandalone";
 import { AdminLoginPanelPage } from "./pages/AdminLoginPanelPage";
 import { AppAdminPanelPage } from "./pages/AppAdminPanelPage";
 import { LandingPage } from "./pages/LandingPage";
@@ -127,6 +128,14 @@ export default function App() {
     return (
       <>
         <AdminLoginPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+  if (hash === "admin-dashboard") {
+    return (
+      <>
+        <AdminDashboardStandalone />
         <Toaster position="top-right" />
       </>
     );

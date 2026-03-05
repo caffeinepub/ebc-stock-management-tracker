@@ -89,24 +89,6 @@ export class ExternalBlob {
         return this;
     }
 }
-export interface UserApprovalInfo {
-    status: ApprovalStatus;
-    principal: Principal;
-}
-export type Time = bigint;
-export interface Item {
-    id: bigint;
-    stockQty: bigint;
-    name: string;
-    createdAt: Time;
-    category: ItemCategory;
-}
-export interface Room {
-    id: bigint;
-    name: string;
-    createdAt: Time;
-    description: string;
-}
 export interface StockEntry {
     id: bigint;
     itemId: bigint;
@@ -118,6 +100,82 @@ export interface StockEntry {
     closingQty: bigint;
     balanceQty: bigint;
     roomId: bigint;
+}
+export type Time = bigint;
+export interface BookingRequest {
+    id: string;
+    startTime: string;
+    status: string;
+    contact: string;
+    endTime: string;
+    date: string;
+    designation: string;
+    createdAt: Time;
+    room: string;
+    bookingPurpose: string;
+    submittedBy: string;
+    organizerName: string;
+    notes: string;
+    bookingType: string;
+    eventName: string;
+}
+export interface Room {
+    id: bigint;
+    name: string;
+    createdAt: Time;
+    description: string;
+}
+export interface UserApprovalInfo {
+    status: ApprovalStatus;
+    principal: Principal;
+}
+export interface StockApprovalRequest {
+    id: string;
+    status: string;
+    role: string;
+    submittedAt: Time;
+    description: string;
+    dataType: string;
+    requestedByName: string;
+}
+export interface Item {
+    id: bigint;
+    stockQty: bigint;
+    name: string;
+    createdAt: Time;
+    category: ItemCategory;
+}
+export interface RegRequest {
+    id: string;
+    status: RegStatus;
+    name: string;
+    role: string;
+    tempUserId: string;
+    submittedAt: Time;
+    email: string;
+    mobile: string;
+    tempPassword: string;
+}
+export interface Notification {
+    id: string;
+    title: string;
+    recipientKey: string;
+    notificationType: string;
+    createdAt: Time;
+    credentialsUserId: string;
+    isRead: boolean;
+    credentialsPassword: string;
+    message: string;
+}
+export interface ApprovedUserRecord {
+    status: string;
+    name: string;
+    createdAt: Time;
+    role: string;
+    tempUserId: string;
+    email: string;
+    mobile: string;
+    tempPassword: string;
 }
 export enum ApprovalStatus {
     pending = "pending",
@@ -137,12 +195,18 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addItem(name: string, category: ItemCategory, stockQty: bigint): Promise<bigint>;
     addRoom(name: string, description: string): Promise<bigint>;
+    approveBookingRequest(id: string): Promise<void>;
+    approveRegistration(id: string, tempUserId: string, tempPassword: string): Promise<void>;
+    approveStockApprovalRequest(id: string): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     createStockEntry(roomId: bigint, itemId: bigint, availableQty: bigint, closingQty: bigint, balanceQty: bigint, staffName: string, date: Time): Promise<bigint>;
     deleteItem(id: bigint): Promise<void>;
     deleteRoom(id: bigint): Promise<void>;
     deleteStockEntry(id: bigint): Promise<void>;
+    getAllBookingRequests(): Promise<Array<BookingRequest>>;
     getAllEntries(): Promise<Array<StockEntry>>;
+    getAllRegistrationRequests(): Promise<Array<RegRequest>>;
+    getAllStockApprovalRequests(): Promise<Array<StockApprovalRequest>>;
     getCallerUserRole(): Promise<UserRole>;
     getDashboardStats(): Promise<{
         roomsCount: bigint;
@@ -151,18 +215,29 @@ export interface backendInterface {
     getEntriesByCategory(category: ItemCategory): Promise<Array<StockEntry>>;
     getItemsByCategory(category: ItemCategory): Promise<Array<Item>>;
     getMyEntries(): Promise<Array<StockEntry>>;
+    getNotificationsForRecipient(recipientKey: string): Promise<Array<Notification>>;
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
     listRooms(): Promise<Array<Room>>;
+    loginWithCredentials(userId: string, password: string): Promise<ApprovedUserRecord | null>;
+    markAllNotificationsReadForRecipient(recipientKey: string): Promise<void>;
+    markNotificationRead(id: string): Promise<void>;
     prefilledItems(gifts: Array<Item>, beverages: Array<Item>): Promise<void>;
+    rejectBookingRequest(id: string): Promise<void>;
+    rejectRegistration(id: string): Promise<void>;
+    rejectStockApprovalRequest(id: string): Promise<void>;
     requestApproval(): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
+    storeNotification(recipientKey: string, notificationType: string, title: string, message: string, credentialsUserId: string, credentialsPassword: string): Promise<string>;
+    submitBookingRequest(id: string, bookingType: string, room: string, date: string, startTime: string, endTime: string, eventName: string, organizerName: string, contact: string, notes: string, submittedBy: string, designation: string, bookingPurpose: string): Promise<void>;
+    submitRegistration(id: string, name: string, email: string, mobile: string, role: string): Promise<void>;
+    submitStockApprovalRequest(id: string, requestedByName: string, role: string, dataType: string, description: string): Promise<void>;
     updateItem(id: bigint, name: string, category: ItemCategory, stockQty: bigint): Promise<void>;
     updateRoom(id: bigint, name: string, description: string): Promise<void>;
     updateStockEntry(id: bigint, roomId: bigint, itemId: bigint, availableQty: bigint, closingQty: bigint, balanceQty: bigint, staffName: string, date: Time): Promise<void>;
 }
-import type { ApprovalStatus as _ApprovalStatus, Item as _Item, ItemCategory as _ItemCategory, Time as _Time, UserApprovalInfo as _UserApprovalInfo, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { ApprovalStatus as _ApprovalStatus, ApprovedUserRecord as _ApprovedUserRecord, Item as _Item, ItemCategory as _ItemCategory, RegRequest as _RegRequest, RegStatus as _RegStatus, Time as _Time, UserApprovalInfo as _UserApprovalInfo, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
@@ -204,6 +279,48 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.addRoom(arg0, arg1);
+            return result;
+        }
+    }
+    async approveBookingRequest(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.approveBookingRequest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.approveBookingRequest(arg0);
+            return result;
+        }
+    }
+    async approveRegistration(arg0: string, arg1: string, arg2: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.approveRegistration(arg0, arg1, arg2);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.approveRegistration(arg0, arg1, arg2);
+            return result;
+        }
+    }
+    async approveStockApprovalRequest(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.approveStockApprovalRequest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.approveStockApprovalRequest(arg0);
             return result;
         }
     }
@@ -277,6 +394,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllBookingRequests(): Promise<Array<BookingRequest>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllBookingRequests();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllBookingRequests();
+            return result;
+        }
+    }
     async getAllEntries(): Promise<Array<StockEntry>> {
         if (this.processError) {
             try {
@@ -291,18 +422,46 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async getAllRegistrationRequests(): Promise<Array<RegRequest>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllRegistrationRequests();
+                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllRegistrationRequests();
+            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getAllStockApprovalRequests(): Promise<Array<StockApprovalRequest>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllStockApprovalRequests();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllStockApprovalRequests();
+            return result;
+        }
+    }
     async getCallerUserRole(): Promise<UserRole> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
         }
     }
     async getDashboardStats(): Promise<{
@@ -340,14 +499,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getItemsByCategory(to_candid_ItemCategory_n1(this._uploadFile, this._downloadFile, arg0));
-                return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getItemsByCategory(to_candid_ItemCategory_n1(this._uploadFile, this._downloadFile, arg0));
-            return from_candid_vec_n7(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
         }
     }
     async getMyEntries(): Promise<Array<StockEntry>> {
@@ -361,6 +520,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getMyEntries();
+            return result;
+        }
+    }
+    async getNotificationsForRecipient(arg0: string): Promise<Array<Notification>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getNotificationsForRecipient(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getNotificationsForRecipient(arg0);
             return result;
         }
     }
@@ -396,14 +569,14 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.listApprovals();
-                return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.listApprovals();
-            return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n17(this._uploadFile, this._downloadFile, result);
         }
     }
     async listRooms(): Promise<Array<Room>> {
@@ -420,17 +593,101 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async prefilledItems(arg0: Array<Item>, arg1: Array<Item>): Promise<void> {
+    async loginWithCredentials(arg0: string, arg1: string): Promise<ApprovedUserRecord | null> {
         if (this.processError) {
             try {
-                const result = await this.actor.prefilledItems(to_candid_vec_n17(this._uploadFile, this._downloadFile, arg0), to_candid_vec_n17(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.loginWithCredentials(arg0, arg1);
+                return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.loginWithCredentials(arg0, arg1);
+            return from_candid_opt_n21(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async markAllNotificationsReadForRecipient(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markAllNotificationsReadForRecipient(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.prefilledItems(to_candid_vec_n17(this._uploadFile, this._downloadFile, arg0), to_candid_vec_n17(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.markAllNotificationsReadForRecipient(arg0);
+            return result;
+        }
+    }
+    async markNotificationRead(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.markNotificationRead(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.markNotificationRead(arg0);
+            return result;
+        }
+    }
+    async prefilledItems(arg0: Array<Item>, arg1: Array<Item>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.prefilledItems(to_candid_vec_n22(this._uploadFile, this._downloadFile, arg0), to_candid_vec_n22(this._uploadFile, this._downloadFile, arg1));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.prefilledItems(to_candid_vec_n22(this._uploadFile, this._downloadFile, arg0), to_candid_vec_n22(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async rejectBookingRequest(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectBookingRequest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectBookingRequest(arg0);
+            return result;
+        }
+    }
+    async rejectRegistration(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectRegistration(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectRegistration(arg0);
+            return result;
+        }
+    }
+    async rejectStockApprovalRequest(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.rejectStockApprovalRequest(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.rejectStockApprovalRequest(arg0);
             return result;
         }
     }
@@ -451,14 +708,70 @@ export class Backend implements backendInterface {
     async setApproval(arg0: Principal, arg1: ApprovalStatus): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n20(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n25(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n20(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.setApproval(arg0, to_candid_ApprovalStatus_n25(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async storeNotification(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.storeNotification(arg0, arg1, arg2, arg3, arg4, arg5);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.storeNotification(arg0, arg1, arg2, arg3, arg4, arg5);
+            return result;
+        }
+    }
+    async submitBookingRequest(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string, arg5: string, arg6: string, arg7: string, arg8: string, arg9: string, arg10: string, arg11: string, arg12: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitBookingRequest(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitBookingRequest(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12);
+            return result;
+        }
+    }
+    async submitRegistration(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitRegistration(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitRegistration(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async submitStockApprovalRequest(arg0: string, arg1: string, arg2: string, arg3: string, arg4: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.submitStockApprovalRequest(arg0, arg1, arg2, arg3, arg4);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.submitStockApprovalRequest(arg0, arg1, arg2, arg3, arg4);
             return result;
         }
     }
@@ -505,34 +818,31 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_ApprovalStatus_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ApprovalStatus): ApprovalStatus {
+function from_candid_ApprovalStatus_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ApprovalStatus): ApprovalStatus {
+    return from_candid_variant_n9(_uploadFile, _downloadFile, value);
+}
+function from_candid_ItemCategory_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ItemCategory): ItemCategory {
     return from_candid_variant_n16(_uploadFile, _downloadFile, value);
 }
-function from_candid_ItemCategory_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ItemCategory): ItemCategory {
-    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
-}
-function from_candid_Item_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Item): Item {
-    return from_candid_record_n9(_uploadFile, _downloadFile, value);
-}
-function from_candid_UserApprovalInfo_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserApprovalInfo): UserApprovalInfo {
+function from_candid_Item_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Item): Item {
     return from_candid_record_n14(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n6(_uploadFile, _downloadFile, value);
+function from_candid_RegRequest_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RegRequest): RegRequest {
+    return from_candid_record_n7(_uploadFile, _downloadFile, value);
+}
+function from_candid_RegStatus_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _RegStatus): RegStatus {
+    return from_candid_variant_n9(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserApprovalInfo_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserApprovalInfo): UserApprovalInfo {
+    return from_candid_record_n19(_uploadFile, _downloadFile, value);
+}
+function from_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
+    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
+}
+function from_candid_opt_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_ApprovedUserRecord]): ApprovedUserRecord | null {
+    return value.length === 0 ? null : value[0];
 }
 function from_candid_record_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    status: _ApprovalStatus;
-    principal: Principal;
-}): {
-    status: ApprovalStatus;
-    principal: Principal;
-} {
-    return {
-        status: from_candid_ApprovalStatus_n15(_uploadFile, _downloadFile, value.status),
-        principal: value.principal
-    };
-}
-function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     stockQty: bigint;
     name: string;
@@ -550,26 +860,55 @@ function from_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint
         stockQty: value.stockQty,
         name: value.name,
         createdAt: value.createdAt,
-        category: from_candid_ItemCategory_n10(_uploadFile, _downloadFile, value.category)
+        category: from_candid_ItemCategory_n15(_uploadFile, _downloadFile, value.category)
+    };
+}
+function from_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    status: _ApprovalStatus;
+    principal: Principal;
+}): {
+    status: ApprovalStatus;
+    principal: Principal;
+} {
+    return {
+        status: from_candid_ApprovalStatus_n20(_uploadFile, _downloadFile, value.status),
+        principal: value.principal
+    };
+}
+function from_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    id: string;
+    status: _RegStatus;
+    name: string;
+    role: string;
+    tempUserId: string;
+    submittedAt: _Time;
+    email: string;
+    mobile: string;
+    tempPassword: string;
+}): {
+    id: string;
+    status: RegStatus;
+    name: string;
+    role: string;
+    tempUserId: string;
+    submittedAt: Time;
+    email: string;
+    mobile: string;
+    tempPassword: string;
+} {
+    return {
+        id: value.id,
+        status: from_candid_RegStatus_n8(_uploadFile, _downloadFile, value.status),
+        name: value.name,
+        role: value.role,
+        tempUserId: value.tempUserId,
+        submittedAt: value.submittedAt,
+        email: value.email,
+        mobile: value.mobile,
+        tempPassword: value.tempPassword
     };
 }
 function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    gift: null;
-} | {
-    beverage: null;
-}): ItemCategory {
-    return "gift" in value ? ItemCategory.gift : "beverage" in value ? ItemCategory.beverage : value;
-}
-function from_candid_variant_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    pending: null;
-} | {
-    approved: null;
-} | {
-    rejected: null;
-}): ApprovalStatus {
-    return "pending" in value ? ApprovalStatus.pending : "approved" in value ? ApprovalStatus.approved : "rejected" in value ? ApprovalStatus.rejected : value;
-}
-function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     admin: null;
 } | {
     user: null;
@@ -578,25 +917,44 @@ function from_candid_variant_n6(_uploadFile: (file: ExternalBlob) => Promise<Uin
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
-function from_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_UserApprovalInfo>): Array<UserApprovalInfo> {
-    return value.map((x)=>from_candid_UserApprovalInfo_n13(_uploadFile, _downloadFile, x));
+function from_candid_variant_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    gift: null;
+} | {
+    beverage: null;
+}): ItemCategory {
+    return "gift" in value ? ItemCategory.gift : "beverage" in value ? ItemCategory.beverage : value;
 }
-function from_candid_vec_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Item>): Array<Item> {
-    return value.map((x)=>from_candid_Item_n8(_uploadFile, _downloadFile, x));
+function from_candid_variant_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    pending: null;
+} | {
+    approved: null;
+} | {
+    rejected: null;
+}): ApprovalStatus {
+    return "pending" in value ? ApprovalStatus.pending : "approved" in value ? ApprovalStatus.approved : "rejected" in value ? ApprovalStatus.rejected : value;
 }
-function to_candid_ApprovalStatus_n20(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): _ApprovalStatus {
-    return to_candid_variant_n21(_uploadFile, _downloadFile, value);
+function from_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Item>): Array<Item> {
+    return value.map((x)=>from_candid_Item_n13(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_UserApprovalInfo>): Array<UserApprovalInfo> {
+    return value.map((x)=>from_candid_UserApprovalInfo_n18(_uploadFile, _downloadFile, x));
+}
+function from_candid_vec_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_RegRequest>): Array<RegRequest> {
+    return value.map((x)=>from_candid_RegRequest_n6(_uploadFile, _downloadFile, x));
+}
+function to_candid_ApprovalStatus_n25(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): _ApprovalStatus {
+    return to_candid_variant_n26(_uploadFile, _downloadFile, value);
 }
 function to_candid_ItemCategory_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ItemCategory): _ItemCategory {
     return to_candid_variant_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_Item_n18(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Item): _Item {
-    return to_candid_record_n19(_uploadFile, _downloadFile, value);
+function to_candid_Item_n23(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Item): _Item {
+    return to_candid_record_n24(_uploadFile, _downloadFile, value);
 }
 function to_candid_UserRole_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
     return to_candid_variant_n4(_uploadFile, _downloadFile, value);
 }
-function to_candid_record_n19(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function to_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     stockQty: bigint;
     name: string;
@@ -628,7 +986,7 @@ function to_candid_variant_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         beverage: null
     } : value;
 }
-function to_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): {
+function to_candid_variant_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ApprovalStatus): {
     pending: null;
 } | {
     approved: null;
@@ -658,8 +1016,8 @@ function to_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8
         guest: null
     } : value;
 }
-function to_candid_vec_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Item>): Array<_Item> {
-    return value.map((x)=>to_candid_Item_n18(_uploadFile, _downloadFile, x));
+function to_candid_vec_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<Item>): Array<_Item> {
+    return value.map((x)=>to_candid_Item_n23(_uploadFile, _downloadFile, x));
 }
 export interface CreateActorOptions {
     agent?: Agent;

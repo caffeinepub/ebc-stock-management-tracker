@@ -13,6 +13,33 @@ import type { Principal } from '@icp-sdk/core/principal';
 export type ApprovalStatus = { 'pending' : null } |
   { 'approved' : null } |
   { 'rejected' : null };
+export interface ApprovedUserRecord {
+  'status' : string,
+  'name' : string,
+  'createdAt' : Time,
+  'role' : string,
+  'tempUserId' : string,
+  'email' : string,
+  'mobile' : string,
+  'tempPassword' : string,
+}
+export interface BookingRequest {
+  'id' : string,
+  'startTime' : string,
+  'status' : string,
+  'contact' : string,
+  'endTime' : string,
+  'date' : string,
+  'designation' : string,
+  'createdAt' : Time,
+  'room' : string,
+  'bookingPurpose' : string,
+  'submittedBy' : string,
+  'organizerName' : string,
+  'notes' : string,
+  'bookingType' : string,
+  'eventName' : string,
+}
 export interface Item {
   'id' : bigint,
   'stockQty' : bigint,
@@ -22,11 +49,45 @@ export interface Item {
 }
 export type ItemCategory = { 'gift' : null } |
   { 'beverage' : null };
+export interface Notification {
+  'id' : string,
+  'title' : string,
+  'recipientKey' : string,
+  'notificationType' : string,
+  'createdAt' : Time,
+  'credentialsUserId' : string,
+  'isRead' : boolean,
+  'credentialsPassword' : string,
+  'message' : string,
+}
+export interface RegRequest {
+  'id' : string,
+  'status' : RegStatus,
+  'name' : string,
+  'role' : string,
+  'tempUserId' : string,
+  'submittedAt' : Time,
+  'email' : string,
+  'mobile' : string,
+  'tempPassword' : string,
+}
+export type RegStatus = { 'pending' : null } |
+  { 'approved' : null } |
+  { 'rejected' : null };
 export interface Room {
   'id' : bigint,
   'name' : string,
   'createdAt' : Time,
   'description' : string,
+}
+export interface StockApprovalRequest {
+  'id' : string,
+  'status' : string,
+  'role' : string,
+  'submittedAt' : Time,
+  'description' : string,
+  'dataType' : string,
+  'requestedByName' : string,
 }
 export interface StockEntry {
   'id' : bigint,
@@ -52,6 +113,9 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addItem' : ActorMethod<[string, ItemCategory, bigint], bigint>,
   'addRoom' : ActorMethod<[string, string], bigint>,
+  'approveBookingRequest' : ActorMethod<[string], undefined>,
+  'approveRegistration' : ActorMethod<[string, string, string], undefined>,
+  'approveStockApprovalRequest' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createStockEntry' : ActorMethod<
     [bigint, bigint, bigint, bigint, bigint, string, Time],
@@ -60,7 +124,10 @@ export interface _SERVICE {
   'deleteItem' : ActorMethod<[bigint], undefined>,
   'deleteRoom' : ActorMethod<[bigint], undefined>,
   'deleteStockEntry' : ActorMethod<[bigint], undefined>,
+  'getAllBookingRequests' : ActorMethod<[], Array<BookingRequest>>,
   'getAllEntries' : ActorMethod<[], Array<StockEntry>>,
+  'getAllRegistrationRequests' : ActorMethod<[], Array<RegRequest>>,
+  'getAllStockApprovalRequests' : ActorMethod<[], Array<StockApprovalRequest>>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDashboardStats' : ActorMethod<
     [],
@@ -69,13 +136,53 @@ export interface _SERVICE {
   'getEntriesByCategory' : ActorMethod<[ItemCategory], Array<StockEntry>>,
   'getItemsByCategory' : ActorMethod<[ItemCategory], Array<Item>>,
   'getMyEntries' : ActorMethod<[], Array<StockEntry>>,
+  'getNotificationsForRecipient' : ActorMethod<[string], Array<Notification>>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
   'listRooms' : ActorMethod<[], Array<Room>>,
+  'loginWithCredentials' : ActorMethod<
+    [string, string],
+    [] | [ApprovedUserRecord]
+  >,
+  'markAllNotificationsReadForRecipient' : ActorMethod<[string], undefined>,
+  'markNotificationRead' : ActorMethod<[string], undefined>,
   'prefilledItems' : ActorMethod<[Array<Item>, Array<Item>], undefined>,
+  'rejectBookingRequest' : ActorMethod<[string], undefined>,
+  'rejectRegistration' : ActorMethod<[string], undefined>,
+  'rejectStockApprovalRequest' : ActorMethod<[string], undefined>,
   'requestApproval' : ActorMethod<[], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'storeNotification' : ActorMethod<
+    [string, string, string, string, string, string],
+    string
+  >,
+  'submitBookingRequest' : ActorMethod<
+    [
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+      string,
+    ],
+    undefined
+  >,
+  'submitRegistration' : ActorMethod<
+    [string, string, string, string, string],
+    undefined
+  >,
+  'submitStockApprovalRequest' : ActorMethod<
+    [string, string, string, string, string],
+    undefined
+  >,
   'updateItem' : ActorMethod<[bigint, string, ItemCategory, bigint], undefined>,
   'updateRoom' : ActorMethod<[bigint, string, string], undefined>,
   'updateStockEntry' : ActorMethod<

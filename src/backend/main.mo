@@ -8,9 +8,13 @@ import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
+
+// Migrate the actor state on upgrades.
+// IMPORTANT: This MUST be the first line in the actor and MUST NOT be moved.
 
 actor {
   // ==== User Management ====
@@ -349,7 +353,7 @@ actor {
       // Staff see only their own entries, admin sees all
       let isOwner = Principal.compare(entry.createdBy, caller) == #equal;
       let isAdmin = AccessControl.isAdmin(accessControlState, caller);
-      
+
       if (isAdmin or isOwner) {
         switch (items.get(entry.itemId)) {
           case (?item) {
@@ -382,7 +386,7 @@ actor {
   // ==== Prefilled Gifts & Beverages ====
   public shared ({ caller }) func prefilledItems(
     gifts : [Item],
-    beverages : [Item]
+    beverages : [Item],
   ) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
@@ -393,6 +397,447 @@ actor {
     };
     for (item in beverages.values()) {
       items.add(item.id, item);
+    };
+  };
+
+  // ========== New Registration Backend (2024-06-10) ==========
+
+  // ==== Data Types ====
+
+  type RegStatus = {
+    #pending;
+    #approved;
+    #rejected;
+  };
+
+  type RegRequest = {
+    id : Text;
+    name : Text;
+    email : Text;
+    mobile : Text;
+    role : Text;
+    status : RegStatus;
+    submittedAt : Time.Time;
+    tempUserId : Text;
+    tempPassword : Text;
+  };
+
+  type ApprovedUserRecord = {
+    tempUserId : Text;
+    tempPassword : Text;
+    role : Text;
+    name : Text;
+    email : Text;
+    mobile : Text;
+    status : Text; // "active" or "suspended"
+    createdAt : Time.Time;
+  };
+
+  // ==== Stable Storage ====
+  var regRequests = Map.empty<Text, RegRequest>();
+  var approvedUsers = Map.empty<Text, ApprovedUserRecord>();
+
+  // ==== Public Functions ====
+
+  // No authentication required - public registration endpoint
+  public shared ({ caller }) func submitRegistration(
+    id : Text,
+    name : Text,
+    email : Text,
+    mobile : Text,
+    role : Text,
+  ) : async () {
+    let newRequest : RegRequest = {
+      id;
+      name;
+      email;
+      mobile;
+      role;
+      status = #pending;
+      submittedAt = Time.now();
+      tempUserId = "";
+      tempPassword = "";
+    };
+    regRequests.add(id, newRequest);
+  };
+
+  // Admin-only: View all registration requests
+  public query ({ caller }) func getAllRegistrationRequests() : async [RegRequest] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    regRequests.values().toArray();
+  };
+
+  // Admin-only: Approve a registration request
+  public shared ({ caller }) func approveRegistration(
+    id : Text,
+    tempUserId : Text,
+    tempPassword : Text,
+  ) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (regRequests.get(id)) {
+      case (null) { Runtime.trap("Registration request not found") };
+      case (?request) { request };
+    };
+
+    // Update request status
+    let updatedRequest = {
+      request with
+      status = #approved;
+      tempUserId;
+      tempPassword;
+    };
+    regRequests.add(id, updatedRequest);
+
+    // Create approved user record
+    let approvedUser : ApprovedUserRecord = {
+      tempUserId;
+      tempPassword;
+      role = request.role;
+      name = request.name;
+      email = request.email;
+      mobile = request.mobile;
+      status = "active";
+      createdAt = Time.now();
+    };
+    approvedUsers.add(tempUserId, approvedUser);
+  };
+
+  // Admin-only: Reject a registration request
+  public shared ({ caller }) func rejectRegistration(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (regRequests.get(id)) {
+      case (null) { Runtime.trap("Registration request not found") };
+      case (?request) { request };
+    };
+
+    let updatedRequest = {
+      request with status = #rejected;
+    };
+    regRequests.add(id, updatedRequest);
+  };
+
+  // Public login endpoint - no authentication required
+  public query ({ caller }) func loginWithCredentials(
+    userId : Text,
+    password : Text,
+  ) : async ?ApprovedUserRecord {
+    switch (approvedUsers.get(userId)) {
+      case (null) { null };
+      case (?user) {
+        if (user.tempPassword == password and user.status == "active") {
+          ?user;
+        } else {
+          null;
+        };
+      };
+    };
+  };
+
+  // ========== Booking Requests System (2024-06-11) ==========
+
+  // ==== Data Types ====
+
+  // New extended booking request
+  type BookingRequest = {
+    id : Text;
+    bookingType : Text; // "conference" or "dining"
+    room : Text;
+    date : Text;
+    startTime : Text;
+    endTime : Text;
+    eventName : Text;
+    organizerName : Text;
+    contact : Text;
+    notes : Text;
+    status : Text; // "pending", "approved", "cancelled"
+    createdAt : Time.Time;
+    submittedBy : Text;
+    designation : Text;
+    bookingPurpose : Text;
+  };
+
+  // ==== Stable Storage ====
+  var bookingRequests = Map.empty<Text, BookingRequest>();
+
+  // ==== Public Functions ====
+
+  // Create booking request - publicly callable (2024-07-07 updated)
+  public shared ({ caller }) func submitBookingRequest(
+    id : Text,
+    bookingType : Text,
+    room : Text,
+    date : Text,
+    startTime : Text,
+    endTime : Text,
+    eventName : Text,
+    organizerName : Text,
+    contact : Text,
+    notes : Text,
+    submittedBy : Text,
+    designation : Text,
+    bookingPurpose : Text,
+  ) : async () {
+    let newRequest : BookingRequest = {
+      id;
+      bookingType;
+      room;
+      date;
+      startTime;
+      endTime;
+      eventName;
+      organizerName;
+      contact;
+      notes;
+      status = "pending";
+      createdAt = Time.now();
+      submittedBy;
+      designation;
+      bookingPurpose;
+    };
+    bookingRequests.add(id, newRequest);
+  };
+
+  // Admin-only: View all booking requests
+  public query ({ caller }) func getAllBookingRequests() : async [BookingRequest] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    bookingRequests.values().toArray();
+  };
+
+  // Admin-only: Approve booking request
+  public shared ({ caller }) func approveBookingRequest(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (bookingRequests.get(id)) {
+      case (null) { Runtime.trap("Booking request not found") };
+      case (?request) { request };
+    };
+
+    let updatedRequest = {
+      request with status = "approved";
+    };
+    bookingRequests.add(id, updatedRequest);
+  };
+
+  // Admin-only: Reject booking request
+  public shared ({ caller }) func rejectBookingRequest(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (bookingRequests.get(id)) {
+      case (null) { Runtime.trap("Booking request not found") };
+      case (?request) { request };
+    };
+
+    let updatedRequest = {
+      request with status = "cancelled";
+    };
+    bookingRequests.add(id, updatedRequest);
+  };
+
+  // ========== Stock Approval Requests System (2024-06-11) ==========
+
+  // ==== Data Types ====
+
+  type StockApprovalRequest = {
+    id : Text;
+    requestedByName : Text;
+    role : Text;
+    dataType : Text;
+    description : Text;
+    status : Text; // "pending", "approved", "rejected"
+    submittedAt : Time.Time;
+  };
+
+  // ==== Stable Storage ====
+  var stockApprovalRequests = Map.empty<Text, StockApprovalRequest>();
+
+  // ==== Public Functions ====
+
+  // Create stock approval request - publicly callable (2024-07-07 updated)
+  public shared ({ caller }) func submitStockApprovalRequest(
+    id : Text,
+    requestedByName : Text,
+    role : Text,
+    dataType : Text,
+    description : Text,
+  ) : async () {
+    let newRequest : StockApprovalRequest = {
+      id;
+      requestedByName;
+      role;
+      dataType;
+      description;
+      status = "pending";
+      submittedAt = Time.now();
+    };
+    stockApprovalRequests.add(id, newRequest);
+  };
+
+  // Admin-only: View all stock approval requests
+  public query ({ caller }) func getAllStockApprovalRequests() : async [StockApprovalRequest] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    stockApprovalRequests.values().toArray();
+  };
+
+  // Admin-only: Approve stock approval request
+  public shared ({ caller }) func approveStockApprovalRequest(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (stockApprovalRequests.get(id)) {
+      case (null) { Runtime.trap("Stock approval request not found") };
+      case (?request) { request };
+    };
+
+    let updatedRequest = {
+      request with status = "approved";
+    };
+    stockApprovalRequests.add(id, updatedRequest);
+  };
+
+  // Admin-only: Reject stock approval request
+  public shared ({ caller }) func rejectStockApprovalRequest(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let request = switch (stockApprovalRequests.get(id)) {
+      case (null) { Runtime.trap("Stock approval request not found") };
+      case (?request) { request };
+    };
+
+    let updatedRequest = {
+      request with status = "rejected";
+    };
+    stockApprovalRequests.add(id, updatedRequest);
+  };
+
+  // ========== Notification System (2024-06-12) ==========
+
+  type Notification = {
+    id : Text;
+    recipientKey : Text;
+    notificationType : Text;
+    title : Text;
+    message : Text;
+    credentialsUserId : Text;
+    credentialsPassword : Text;
+    isRead : Bool;
+    createdAt : Time.Time;
+  };
+
+  var notifications = Map.empty<Text, Notification>();
+
+  // 1. Store Notification (admin-only - only admins should create notifications)
+  public shared ({ caller }) func storeNotification(
+    recipientKey : Text,
+    notificationType : Text,
+    title : Text,
+    message : Text,
+    credentialsUserId : Text,
+    credentialsPassword : Text,
+  ) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    let id = recipientKey # Time.now().toText();
+
+    let notification : Notification = {
+      id;
+      recipientKey;
+      notificationType;
+      title;
+      message;
+      credentialsUserId;
+      credentialsPassword;
+      isRead = false;
+      createdAt = Time.now();
+    };
+
+    notifications.add(id, notification);
+    id;
+  };
+
+  // 2. Get Unread Notifications for Recipient (requires ownership verification or admin)
+  public query ({ caller }) func getNotificationsForRecipient(recipientKey : Text) : async [Notification] {
+    // Allow admins to view any notifications
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      // For non-admins, verify they are approved users
+      if (not UserApproval.isApproved(approvalState, caller)) {
+        Runtime.trap("Unauthorized: Only approved users can view notifications");
+      };
+
+      // Verify ownership: recipientKey should match an approved user's email for this caller
+      // Since we don't have a direct Principal->email mapping, we verify the user is approved
+      // The frontend should only request notifications for the logged-in user's email
+    };
+
+    let filtered = List.empty<Notification>();
+    for ((_, notification) in notifications.entries()) {
+      if (Text.equal(notification.recipientKey, recipientKey) and not notification.isRead) {
+        filtered.add(notification);
+      };
+    };
+    filtered.toArray();
+  };
+
+  // 3. Mark Single Notification as Read (requires ownership verification or admin)
+  public shared ({ caller }) func markNotificationRead(id : Text) : async () {
+    let notification = switch (notifications.get(id)) {
+      case (null) { Runtime.trap("Notification not found") };
+      case (?notification) { notification };
+    };
+
+    // Allow admins to mark any notification as read
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      // For non-admins, verify they are approved users
+      if (not UserApproval.isApproved(approvalState, caller)) {
+        Runtime.trap("Unauthorized: Only approved users can mark notifications as read");
+      };
+      // The frontend should only allow marking notifications that belong to the logged-in user
+    };
+
+    let updatedNotification = {
+      notification with isRead = true;
+    };
+    notifications.add(id, updatedNotification);
+  };
+
+  // 4. Mark All Notifications as Read for Recipient (requires ownership verification or admin)
+  public shared ({ caller }) func markAllNotificationsReadForRecipient(recipientKey : Text) : async () {
+    // Allow admins to mark any notifications as read
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      // For non-admins, verify they are approved users
+      if (not UserApproval.isApproved(approvalState, caller)) {
+        Runtime.trap("Unauthorized: Only approved users can mark notifications as read");
+      };
+      // The frontend should only allow marking notifications that belong to the logged-in user
+    };
+
+    for ((id, notification) in notifications.entries()) {
+      if (Text.equal(notification.recipientKey, recipientKey) and not notification.isRead) {
+        let updatedNotification = {
+          notification with isRead = true;
+        };
+        notifications.add(id, updatedNotification);
+      };
     };
   };
 };

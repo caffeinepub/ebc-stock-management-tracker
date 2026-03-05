@@ -1,5 +1,9 @@
 import { useState } from "react";
 
+// Admin credentials for the standalone Admin Login Panel
+const ADMIN_EMAIL = "admin@ebc.com";
+const ADMIN_PASSWORD = "Admin@123";
+
 const FEATURES = [
   {
     icon: "🔐",
@@ -51,6 +55,13 @@ export function AdminLoginPanelPage() {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      // Check credentials
+      if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+        // Login success -- redirect to admin dashboard
+        window.location.hash = "admin-dashboard";
+        return;
+      }
+      // Wrong credentials
       const newAttempts = attempts + 1;
       setAttempts(newAttempts);
       if (newAttempts >= 3) {

@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  getAdminByCredentials,
+  seedDefaultAdminIfNeeded,
+} from "../lib/registrationStore";
 
 const FEATURES = [
   {
@@ -24,11 +28,16 @@ const FEATURES = [
 ];
 
 export function AppAdminPanelPage() {
-  const [email, setEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPw, setShowPw] = useState(false);
+
+  // Seed default admin credentials on first load
+  useEffect(() => {
+    seedDefaultAdminIfNeeded();
+  }, []);
 
   const handleBack = () => {
     window.location.hash = "";
@@ -37,16 +46,20 @@ export function AppAdminPanelPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!email || !password) {
-      setError("Please enter your credentials.");
+    if (!userId || !password) {
+      setError("Please enter your User ID and Password.");
       return;
     }
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setError(
-        "Access Denied: Only authorized Application Admins can log in through this panel.",
-      );
+      const admin = getAdminByCredentials(userId.trim(), password);
+      if (admin) {
+        // Login success -- go to admin dashboard
+        window.location.hash = "admin-dashboard";
+        return;
+      }
+      setError("Invalid User ID or Password. Please try again.");
     }, 1200);
   };
 
@@ -333,7 +346,7 @@ export function AppAdminPanelPage() {
           >
             <div>
               <label
-                htmlFor="app-admin-email"
+                htmlFor="app-admin-userid"
                 style={{
                   display: "block",
                   color: "#94a3b8",
@@ -343,15 +356,16 @@ export function AppAdminPanelPage() {
                   letterSpacing: "0.5px",
                 }}
               >
-                ADMIN EMAIL
+                EMAIL / USER ID
               </label>
               <input
-                id="app-admin-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@company.com"
-                data-ocid="app-admin-panel.email.input"
+                id="app-admin-userid"
+                type="text"
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="Enter your Email or User ID"
+                data-ocid="app-admin-panel.userid.input"
+                autoComplete="username"
                 style={{
                   width: "100%",
                   background: "rgba(255,255,255,0.06)",
@@ -387,6 +401,7 @@ export function AppAdminPanelPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••"
                   data-ocid="app-admin-panel.password.input"
+                  autoComplete="current-password"
                   style={{
                     width: "100%",
                     background: "rgba(255,255,255,0.06)",
