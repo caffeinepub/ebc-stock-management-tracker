@@ -206,13 +206,38 @@ export function AdminDashboardStandalone() {
         .catch(() => {
           setPendingRequestsLoading(false);
         });
+    } else {
+      // Actor not ready — still clear loading state so UI doesn't stay stuck
+      setPendingRequestsLoading(false);
     }
   }, []);
 
   // ─── Master refresh — fetches BOTH registrations AND bookings ──────────
+  // Waits up to 10s for actor to be ready before giving up
   const refreshAllPendingData = useCallback(async () => {
-    const currentActor = actorRef.current;
-    if (!currentActor) return;
+    // Wait for actor to be available (up to 10 seconds, checking every 500ms)
+    let currentActor = actorRef.current;
+    if (!currentActor) {
+      await new Promise<void>((resolve) => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          currentActor = actorRef.current;
+          if (currentActor || attempts >= 20) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 500);
+      });
+    }
+
+    currentActor = actorRef.current;
+    if (!currentActor) {
+      // Still no actor after waiting — clear loading states
+      setRegInitialLoading(false);
+      setPendingRequestsLoading(false);
+      return;
+    }
 
     // Fetch both in parallel for speed
     const [reqs, bookings] = await Promise.all([
@@ -222,12 +247,13 @@ export function AdminDashboardStandalone() {
 
     if (reqs !== null) {
       setAllRegistrationRequests(reqs);
-      setRegInitialLoading(false);
     }
+    setRegInitialLoading(false);
+
     if (bookings !== null) {
       setBackendBookings(bookings);
-      setPendingRequestsLoading(false);
     }
+    setPendingRequestsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -242,20 +268,28 @@ export function AdminDashboardStandalone() {
     const refresh = async () => {
       if (cancelled) return;
       const currentActor = actorRef.current;
-      if (!currentActor) return;
+      // Always clear loading states even if actor is not ready yet
+      if (!currentActor) {
+        if (!cancelled) {
+          setRegInitialLoading(false);
+          setPendingRequestsLoading(false);
+        }
+        return;
+      }
       try {
         const [reqs, bookings] = await Promise.all([
           fetchAllRegistrationRequests(currentActor).catch(() => null),
           fetchAllBookingRequests(currentActor).catch(() => null),
         ]);
         if (cancelled) return;
+        // Always clear loading states regardless of result
+        setRegInitialLoading(false);
+        setPendingRequestsLoading(false);
         if (reqs !== null) {
           setAllRegistrationRequests(reqs);
-          setRegInitialLoading(false);
         }
         if (bookings !== null) {
           setBackendBookings(bookings);
-          setPendingRequestsLoading(false);
         }
         const conf = loadFacilityBookings(LS_CONF);
         const dining = loadFacilityBookings(LS_DINING);
@@ -266,9 +300,21 @@ export function AdminDashboardStandalone() {
         );
         setBookingAnalytics(computeBookingAnalytics());
       } catch {
-        // silently ignore
+        // On error, still clear loading states so UI doesn't get stuck
+        if (!cancelled) {
+          setRegInitialLoading(false);
+          setPendingRequestsLoading(false);
+        }
       }
     };
+
+    // Safety fallback: clear loading states after 3 seconds no matter what
+    const loadingFallback = setTimeout(() => {
+      if (!cancelled) {
+        setRegInitialLoading(false);
+        setPendingRequestsLoading(false);
+      }
+    }, 3_000);
 
     refresh();
     refreshUpdate();
@@ -300,16 +346,22 @@ export function AdminDashboardStandalone() {
 
     return () => {
       cancelled = true;
+      clearTimeout(loadingFallback);
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
     };
   }, [refreshFacilityBookings]);
 
-  // Also refetch when actor first becomes available
+  // Also refetch when actor first becomes available — this is the critical trigger
+  // This runs every time actor changes from null -> available
   useEffect(() => {
     if (!actor) return;
-    refreshAllPendingData().catch(() => {});
+    // Actor just became available — immediately fetch all pending data
+    refreshAllPendingData().catch(() => {
+      setRegInitialLoading(false);
+      setPendingRequestsLoading(false);
+    });
   }, [actor, refreshAllPendingData]);
 
   const regPendingCount = allRegistrationRequests.filter(

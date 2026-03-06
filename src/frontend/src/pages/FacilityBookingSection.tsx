@@ -14,7 +14,7 @@ import {
   UtensilsCrossed,
   XCircle,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CorporateNotificationPopup } from "../components/shared/CorporateNotificationPopup";
 import { useActor } from "../hooks/useActor";
 import { useNotificationPoller } from "../hooks/useNotificationPoller";
@@ -671,6 +671,10 @@ interface ConferencePanelProps {
 
 function ConferenceRoomPanel({ role }: ConferencePanelProps) {
   const { actor } = useActor();
+  const actorRef = useRef(actor);
+  useEffect(() => {
+    actorRef.current = actor;
+  }, [actor]);
   const [bookings, setBookings] = useState<Booking[]>(() =>
     loadBookings(LS_CONF),
   );
@@ -780,9 +784,14 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
 
       const updated = [...current, newBooking];
       saveBookings(LS_CONF, updated);
-      // Backend sync: fire-and-forget so cross-device requests appear in admin panel
-      if (actor) {
-        submitBookingRequestToBackend(actor, {
+
+      // Backend sync with retry — ensures cross-device admin panel receives the request
+      const syncToBackend = (
+        actorInstance: typeof actor,
+        retries = 3,
+      ): void => {
+        if (!actorInstance) return;
+        submitBookingRequestToBackend(actorInstance, {
           id: newBooking.id,
           bookingType: newBooking.type,
           room: newBooking.room,
@@ -796,8 +805,31 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
           submittedBy: newBooking.organizerName,
           designation: newBooking.designation ?? "",
           bookingPurpose: newBooking.bookingPurpose ?? "",
-        }).catch(() => {});
+        }).catch(() => {
+          // Retry up to 3 times with increasing delay
+          if (retries > 0) {
+            setTimeout(() => syncToBackend(actorInstance, retries - 1), 2000);
+          }
+        });
+      };
+
+      if (actorRef.current) {
+        syncToBackend(actorRef.current);
+      } else {
+        // Actor not ready yet — wait up to 15s and retry using ref (always fresh)
+        let waited = 0;
+        const waitForActor = setInterval(() => {
+          waited += 500;
+          const freshActor = actorRef.current;
+          if (freshActor) {
+            clearInterval(waitForActor);
+            syncToBackend(freshActor);
+          } else if (waited >= 15000) {
+            clearInterval(waitForActor);
+          }
+        }, 500);
       }
+
       appendAudit(
         {
           action: "CREATE",
@@ -829,7 +861,7 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
         text: `Booking ${newBooking.id} submitted successfully. Awaiting approval.`,
       });
     },
-    [form, role, actor],
+    [form, role],
   );
 
   const updateStatus = (id: string, status: BookingStatus) => {
@@ -2097,6 +2129,10 @@ interface DiningPanelProps {
 
 function DiningRoomPanel({ role }: DiningPanelProps) {
   const { actor } = useActor();
+  const actorRef = useRef(actor);
+  useEffect(() => {
+    actorRef.current = actor;
+  }, [actor]);
   const [bookings, setBookings] = useState<Booking[]>(() =>
     loadBookings(LS_DINING),
   );
@@ -2208,9 +2244,14 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
 
       const updated = [...current, newBooking];
       saveBookings(LS_DINING, updated);
-      // Backend sync: fire-and-forget so cross-device requests appear in admin panel
-      if (actor) {
-        submitBookingRequestToBackend(actor, {
+
+      // Backend sync with retry — ensures cross-device admin panel receives the request
+      const syncDiningToBackend = (
+        actorInstance: typeof actor,
+        retries = 3,
+      ): void => {
+        if (!actorInstance) return;
+        submitBookingRequestToBackend(actorInstance, {
           id: newBooking.id,
           bookingType: newBooking.type,
           room: newBooking.room,
@@ -2224,8 +2265,33 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
           submittedBy: newBooking.organizerName,
           designation: newBooking.designation ?? "",
           bookingPurpose: newBooking.bookingPurpose ?? "",
-        }).catch(() => {});
+        }).catch(() => {
+          if (retries > 0) {
+            setTimeout(
+              () => syncDiningToBackend(actorInstance, retries - 1),
+              2000,
+            );
+          }
+        });
+      };
+
+      if (actorRef.current) {
+        syncDiningToBackend(actorRef.current);
+      } else {
+        // Actor not ready yet — wait up to 15s using ref (always fresh, no stale closure)
+        let waited = 0;
+        const waitForActor = setInterval(() => {
+          waited += 500;
+          const freshActor = actorRef.current;
+          if (freshActor) {
+            clearInterval(waitForActor);
+            syncDiningToBackend(freshActor);
+          } else if (waited >= 15000) {
+            clearInterval(waitForActor);
+          }
+        }, 500);
       }
+
       appendAudit(
         {
           action: "CREATE",
@@ -2258,7 +2324,7 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
         text: `Booking ${newBooking.id} submitted successfully. Awaiting approval.`,
       });
     },
-    [form, role, actor],
+    [form, role],
   );
 
   const updateStatus = (id: string, status: BookingStatus) => {

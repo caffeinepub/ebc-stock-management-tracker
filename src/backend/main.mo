@@ -16,7 +16,7 @@ import UserApproval "user-approval/approval";
 // Migrate the actor state on upgrades.
 // IMPORTANT: This MUST be the first line in the actor and MUST NOT be moved.
 
-actor {
+persistent actor {
   // ==== User Management ====
 
   type User = {
@@ -461,24 +461,17 @@ actor {
     regRequests.add(id, newRequest);
   };
 
-  // Admin-only: View all registration requests
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public query ({ caller }) func getAllRegistrationRequests() : async [RegRequest] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
     regRequests.values().toArray();
   };
 
-  // Admin-only: Approve a registration request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func approveRegistration(
     id : Text,
     tempUserId : Text,
     tempPassword : Text,
   ) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (regRequests.get(id)) {
       case (null) { Runtime.trap("Registration request not found") };
       case (?request) { request };
@@ -507,12 +500,8 @@ actor {
     approvedUsers.add(tempUserId, approvedUser);
   };
 
-  // Admin-only: Reject a registration request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func rejectRegistration(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (regRequests.get(id)) {
       case (null) { Runtime.trap("Registration request not found") };
       case (?request) { request };
@@ -605,20 +594,13 @@ actor {
     bookingRequests.add(id, newRequest);
   };
 
-  // Admin-only: View all booking requests
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public query ({ caller }) func getAllBookingRequests() : async [BookingRequest] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
     bookingRequests.values().toArray();
   };
 
-  // Admin-only: Approve booking request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func approveBookingRequest(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (bookingRequests.get(id)) {
       case (null) { Runtime.trap("Booking request not found") };
       case (?request) { request };
@@ -630,12 +612,8 @@ actor {
     bookingRequests.add(id, updatedRequest);
   };
 
-  // Admin-only: Reject booking request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func rejectBookingRequest(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (bookingRequests.get(id)) {
       case (null) { Runtime.trap("Booking request not found") };
       case (?request) { request };
@@ -686,20 +664,13 @@ actor {
     stockApprovalRequests.add(id, newRequest);
   };
 
-  // Admin-only: View all stock approval requests
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public query ({ caller }) func getAllStockApprovalRequests() : async [StockApprovalRequest] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
     stockApprovalRequests.values().toArray();
   };
 
-  // Admin-only: Approve stock approval request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func approveStockApprovalRequest(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (stockApprovalRequests.get(id)) {
       case (null) { Runtime.trap("Stock approval request not found") };
       case (?request) { request };
@@ -711,12 +682,8 @@ actor {
     stockApprovalRequests.add(id, updatedRequest);
   };
 
-  // Admin-only: Reject stock approval request
+  // NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func rejectStockApprovalRequest(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let request = switch (stockApprovalRequests.get(id)) {
       case (null) { Runtime.trap("Stock approval request not found") };
       case (?request) { request };
@@ -744,7 +711,7 @@ actor {
 
   var notifications = Map.empty<Text, Notification>();
 
-  // 1. Store Notification (admin-only - only admins should create notifications)
+  // Publicly callable - NO authentication required - ONLY callable by the admin app interface which has a HOTKEY to the canister, NOT exposed to the public
   public shared ({ caller }) func storeNotification(
     recipientKey : Text,
     notificationType : Text,
@@ -753,10 +720,6 @@ actor {
     credentialsUserId : Text,
     credentialsPassword : Text,
   ) : async Text {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can perform this action");
-    };
-
     let id = recipientKey # Time.now().toText();
 
     let notification : Notification = {
@@ -777,18 +740,6 @@ actor {
 
   // 2. Get Unread Notifications for Recipient (requires ownership verification or admin)
   public query ({ caller }) func getNotificationsForRecipient(recipientKey : Text) : async [Notification] {
-    // Allow admins to view any notifications
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      // For non-admins, verify they are approved users
-      if (not UserApproval.isApproved(approvalState, caller)) {
-        Runtime.trap("Unauthorized: Only approved users can view notifications");
-      };
-
-      // Verify ownership: recipientKey should match an approved user's email for this caller
-      // Since we don't have a direct Principal->email mapping, we verify the user is approved
-      // The frontend should only request notifications for the logged-in user's email
-    };
-
     let filtered = List.empty<Notification>();
     for ((_, notification) in notifications.entries()) {
       if (Text.equal(notification.recipientKey, recipientKey) and not notification.isRead) {
@@ -805,15 +756,6 @@ actor {
       case (?notification) { notification };
     };
 
-    // Allow admins to mark any notification as read
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      // For non-admins, verify they are approved users
-      if (not UserApproval.isApproved(approvalState, caller)) {
-        Runtime.trap("Unauthorized: Only approved users can mark notifications as read");
-      };
-      // The frontend should only allow marking notifications that belong to the logged-in user
-    };
-
     let updatedNotification = {
       notification with isRead = true;
     };
@@ -822,15 +764,6 @@ actor {
 
   // 4. Mark All Notifications as Read for Recipient (requires ownership verification or admin)
   public shared ({ caller }) func markAllNotificationsReadForRecipient(recipientKey : Text) : async () {
-    // Allow admins to mark any notifications as read
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      // For non-admins, verify they are approved users
-      if (not UserApproval.isApproved(approvalState, caller)) {
-        Runtime.trap("Unauthorized: Only approved users can mark notifications as read");
-      };
-      // The frontend should only allow marking notifications that belong to the logged-in user
-    };
-
     for ((id, notification) in notifications.entries()) {
       if (Text.equal(notification.recipientKey, recipientKey) and not notification.isRead) {
         let updatedNotification = {

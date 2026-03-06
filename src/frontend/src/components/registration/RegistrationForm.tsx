@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useActor } from "../../hooks/useActor";
 import { useNotificationPoller } from "../../hooks/useNotificationPoller";
 import { submitRegistrationToBackend } from "../../lib/backendRegistrationApi";
@@ -32,6 +32,12 @@ export function RegistrationForm({
   onBack,
 }: RegistrationFormProps) {
   const { actor } = useActor();
+  // Keep a ref to the latest actor so retry callbacks always use the freshest value
+  const actorRef = useRef(actor);
+  useEffect(() => {
+    actorRef.current = actor;
+  }, [actor]);
+
   const [name, setName] = useState("");
   const [contactType, setContactType] = useState<ContactType>("email");
   const [email, setEmail] = useState("");
@@ -70,6 +76,28 @@ export function RegistrationForm({
     letterSpacing: "0.5px",
   };
 
+  // Helper: wait up to 15 seconds for actor to become available
+  const waitForActor = (): Promise<typeof actor> => {
+    return new Promise((resolve) => {
+      if (actorRef.current) {
+        resolve(actorRef.current);
+        return;
+      }
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (actorRef.current) {
+          clearInterval(interval);
+          resolve(actorRef.current);
+        } else if (attempts >= 30) {
+          // 30 x 500ms = 15 seconds max wait
+          clearInterval(interval);
+          resolve(null);
+        }
+      }, 500);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -87,30 +115,70 @@ export function RegistrationForm({
       return;
     }
 
-    if (!actor) {
-      setError("Failed to submit. Please check your connection and try again.");
-      return;
-    }
-
     setLoading(true);
     try {
+      // Wait for actor to be ready (up to 20 seconds)
+      const resolvedActor = await waitForActor();
+      if (!resolvedActor) {
+        setError(
+          "Connection to server timed out. Please refresh the page and try again.",
+        );
+        setLoading(false);
+        return;
+      }
+
       const req = {
-        id: `req_${Date.now()}_${generateTempUserId()}`,
+        // Use a unique ID combining timestamp + random suffix to prevent any collision
+        id: `reg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
         name: name.trim(),
         email: contactType === "email" ? email.trim() : "",
         mobile: contactType === "mobile" ? mobile.trim() : "",
         role,
       };
-      await submitRegistrationToBackend(actor, req);
+
+      // Retry up to 3 times in case of transient network errors
+      let lastError: unknown = null;
+      let submitted = false;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          await submitRegistrationToBackend(resolvedActor, req);
+          submitted = true;
+          break;
+        } catch (err) {
+          lastError = err;
+          // Wait 1 second before retrying
+          if (attempt < 2) {
+            await new Promise((r) => setTimeout(r, 1000));
+          }
+        }
+      }
+
+      if (!submitted) {
+        throw lastError;
+      }
+
       // Store contact key to poll for approval/rejection notification
       const contactKey = contactType === "email" ? email.trim() : mobile.trim();
       setSubmittedContact(contactKey);
       setShowSuccess(true);
     } catch {
-      setError("Failed to submit. Please check your connection and try again.");
+      setError(
+        "Failed to submit request. Please check your internet connection and try again.",
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper to fully reset all form state so another person can register immediately
+  const resetFormForNextPerson = () => {
+    setName("");
+    setEmail("");
+    setMobile("");
+    setContactType("email");
+    setError("");
+    setSubmittedContact("");
+    setShowSuccess(false);
   };
 
   // ── Success Modal ──────────────────────────────────────────────────────────
@@ -200,10 +268,11 @@ export function RegistrationForm({
               <strong style={{ color: "#94a3b8" }}>Role:</strong> {role}
             </div>
           </div>
+          {/* Register another person button — resets form without navigating away */}
           <button
             type="button"
-            onClick={onBack}
-            data-ocid="registration.success.ok_button"
+            onClick={resetFormForNextPerson}
+            data-ocid="registration.success.register_another_button"
             style={{
               background: `linear-gradient(135deg, ${accent}, ${accentLight})`,
               border: "none",
@@ -214,6 +283,25 @@ export function RegistrationForm({
               fontWeight: 700,
               cursor: "pointer",
               boxShadow: `0 6px 20px ${glow}`,
+              width: "100%",
+              marginBottom: "10px",
+            }}
+          >
+            Register Another Person
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            data-ocid="registration.success.ok_button"
+            style={{
+              background: "none",
+              border: `1px solid rgba(${role === "Manager" ? "124,58,237" : "217,119,6"},0.3)`,
+              color: accentLight,
+              borderRadius: "10px",
+              padding: "11px 32px",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: "pointer",
               width: "100%",
             }}
           >

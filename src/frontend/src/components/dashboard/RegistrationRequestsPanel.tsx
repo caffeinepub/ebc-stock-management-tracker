@@ -109,7 +109,11 @@ export function RegistrationRequestsPanel() {
 
     const refresh = async () => {
       const currentActor = actorRef.current;
-      if (!currentActor) return;
+      if (!currentActor) {
+        // Actor not ready — clear loading so UI doesn't stay stuck
+        if (!cancelled) setInitialLoading(false);
+        return;
+      }
       try {
         const data = await fetchAllRegistrationRequests(currentActor);
         if (!cancelled) {
@@ -124,6 +128,11 @@ export function RegistrationRequestsPanel() {
 
     // Immediate fetch on mount
     refresh();
+
+    // Safety fallback: if actor is null for more than 3 seconds, stop showing spinner
+    const fallbackTimer = setTimeout(() => {
+      if (!cancelled) setInitialLoading(false);
+    }, 3_000);
 
     // Poll every 3 seconds for near-real-time cross-device updates
     const interval = setInterval(refresh, 3_000);
@@ -141,6 +150,7 @@ export function RegistrationRequestsPanel() {
 
     return () => {
       cancelled = true;
+      clearTimeout(fallbackTimer);
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("focus", onFocus);
