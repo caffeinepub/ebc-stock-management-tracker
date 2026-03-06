@@ -166,6 +166,8 @@ export function AdminDashboardStandalone() {
     RegistrationRequest[]
   >([]);
   const [regInitialLoading, setRegInitialLoading] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
 
   // Update requests still use localStorage (same-device workflow)
   const [updatePendingCount, setUpdatePendingCount] = useState(
@@ -254,6 +256,7 @@ export function AdminDashboardStandalone() {
       setBackendBookings(bookings);
     }
     setPendingRequestsLoading(false);
+    setLastFetchTime(new Date());
   }, []);
 
   useEffect(() => {
@@ -291,6 +294,7 @@ export function AdminDashboardStandalone() {
         if (bookings !== null) {
           setBackendBookings(bookings);
         }
+        setLastFetchTime(new Date());
         const conf = loadFacilityBookings(LS_CONF);
         const dining = loadFacilityBookings(LS_DINING);
         setConfBookings(conf);
@@ -657,6 +661,22 @@ IT Division`;
     window.location.hash = "";
   };
 
+  // Manual refresh handler — admin can force-reload all pending requests
+  const handleManualRefresh = async () => {
+    if (manualRefreshing) return;
+    setManualRefreshing(true);
+    setRegInitialLoading(true);
+    setPendingRequestsLoading(true);
+    try {
+      await refreshAllPendingData();
+    } catch {
+      setRegInitialLoading(false);
+      setPendingRequestsLoading(false);
+    } finally {
+      setManualRefreshing(false);
+    }
+  };
+
   // AUTO-LOGOUT: 30 minutes of inactivity
   useEffect(() => {
     const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
@@ -918,30 +938,78 @@ IT Division`;
           ═══════════════════════════════════════════════════════════════════ */}
           <TabsContent value="pending-requests" className="mt-0">
             <div className="mb-5">
-              <div className="flex items-center gap-3 mb-1">
-                <h2 className="font-display text-lg font-semibold text-foreground">
-                  Pending Requests for Approval
-                </h2>
-                {totalAllPendingCount > 0 && (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "2px 10px",
-                      borderRadius: "12px",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      background: "rgba(245,158,11,0.15)",
-                      color: "#fcd34d",
-                      border: "1px solid rgba(245,158,11,0.35)",
-                    }}
-                  >
-                    {totalAllPendingCount} pending
-                  </span>
-                )}
+              <div className="flex items-center justify-between gap-3 mb-1 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="font-display text-lg font-semibold text-foreground">
+                    Pending Requests for Approval
+                  </h2>
+                  {totalAllPendingCount > 0 && (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "2px 10px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        background: "rgba(245,158,11,0.15)",
+                        color: "#fcd34d",
+                        border: "1px solid rgba(245,158,11,0.35)",
+                      }}
+                    >
+                      {totalAllPendingCount} pending
+                    </span>
+                  )}
+                </div>
+                {/* Manual refresh button */}
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={manualRefreshing}
+                  data-ocid="admin-standalone.pending-requests.refresh.button"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "6px 14px",
+                    borderRadius: "7px",
+                    border: "1px solid rgba(59,130,246,0.3)",
+                    background: "rgba(59,130,246,0.1)",
+                    color: "#93c5fd",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    cursor: manualRefreshing ? "not-allowed" : "pointer",
+                    opacity: manualRefreshing ? 0.6 : 1,
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {manualRefreshing ? (
+                    <Loader2
+                      style={{
+                        width: "12px",
+                        height: "12px",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                  ) : (
+                    <TrendingUp style={{ width: "12px", height: "12px" }} />
+                  )}
+                  {manualRefreshing ? "Refreshing..." : "Refresh Now"}
+                </button>
               </div>
               <p className="text-sm text-muted-foreground">
                 All pending registration and room booking requests from any
                 device — Approve or Reject in real time.
+                {lastFetchTime && (
+                  <span
+                    style={{
+                      color: "#475569",
+                      marginLeft: "8px",
+                      fontSize: "11px",
+                    }}
+                  >
+                    Last updated: {lastFetchTime.toLocaleTimeString("en-IN")}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -968,11 +1036,46 @@ IT Division`;
                   className="text-center py-16 text-muted-foreground border border-border/60 rounded-xl"
                 >
                   <CheckCircle2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                  <p className="font-semibold text-base">All caught up!</p>
+                  <p className="font-semibold text-base">No pending requests</p>
                   <p className="text-sm mt-1 opacity-70">
                     No pending requests at this time. New requests from any
-                    device will appear here instantly.
+                    device will appear here automatically every 3 seconds.
                   </p>
+                  <button
+                    type="button"
+                    onClick={handleManualRefresh}
+                    disabled={manualRefreshing}
+                    style={{
+                      marginTop: "14px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 18px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(59,130,246,0.3)",
+                      background: "rgba(59,130,246,0.1)",
+                      color: "#93c5fd",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: manualRefreshing ? "not-allowed" : "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {manualRefreshing ? (
+                      <Loader2
+                        style={{
+                          width: "12px",
+                          height: "12px",
+                          animation: "spin 1s linear infinite",
+                        }}
+                      />
+                    ) : (
+                      <TrendingUp style={{ width: "12px", height: "12px" }} />
+                    )}
+                    {manualRefreshing
+                      ? "Checking..."
+                      : "Check for New Requests"}
+                  </button>
                 </div>
               )}
 
@@ -1092,20 +1195,28 @@ IT Division`;
                                 background:
                                   req.role === "Manager"
                                     ? "rgba(59,130,246,0.12)"
-                                    : "rgba(16,185,129,0.12)",
+                                    : req.role === "First Time User"
+                                      ? "rgba(8,145,178,0.12)"
+                                      : "rgba(16,185,129,0.12)",
                                 color:
                                   req.role === "Manager"
                                     ? "#93c5fd"
-                                    : "#6ee7b7",
+                                    : req.role === "First Time User"
+                                      ? "#67e8f9"
+                                      : "#6ee7b7",
                                 border:
                                   req.role === "Manager"
                                     ? "1px solid rgba(59,130,246,0.25)"
-                                    : "1px solid rgba(16,185,129,0.25)",
+                                    : req.role === "First Time User"
+                                      ? "1px solid rgba(8,145,178,0.25)"
+                                      : "1px solid rgba(16,185,129,0.25)",
                               }}
                             >
                               {req.role === "Manager"
                                 ? "💼 Manager"
-                                : "📋 Supervisor"}
+                                : req.role === "First Time User"
+                                  ? "🆕 First Time User"
+                                  : "📋 Supervisor"}
                             </span>
                           </div>
                           <span style={{ color: "#475569", fontSize: "10px" }}>

@@ -1,17 +1,18 @@
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 export interface RegistrationRequest {
-  id: string; // 'req_' + Date.now() + random
+  id: string; // 'reg_' + timestamp + random
   name: string;
   email: string; // could be empty if mobile provided
   mobile: string; // could be empty if email provided
-  role: "Manager" | "Supervisor";
+  role: "Manager" | "Supervisor" | "First Time User";
   status: "pending" | "approved" | "rejected";
   submittedAt: number; // Date.now()
   approvedAt?: number;
   rejectedAt?: number;
   tempUserId?: string;
   tempPassword?: string;
+  deviceId?: string; // Session/device identifier
 }
 
 export interface ApprovedUser {

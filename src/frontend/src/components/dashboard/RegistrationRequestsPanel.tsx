@@ -64,11 +64,20 @@ function StatusBadge({ status }: { status: RegistrationRequest["status"] }) {
   );
 }
 
-function RoleBadge({ role }: { role: "Manager" | "Supervisor" }) {
+function RoleBadge({
+  role,
+}: { role: "Manager" | "Supervisor" | "First Time User" }) {
   if (role === "Manager") {
     return (
       <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
         💼 Manager
+      </Badge>
+    );
+  }
+  if (role === "First Time User") {
+    return (
+      <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-xs">
+        🆕 First Time User
       </Badge>
     );
   }

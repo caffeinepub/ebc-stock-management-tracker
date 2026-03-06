@@ -1141,11 +1141,11 @@ export function LandingPage() {
           </p>
         </div>
 
-        {/* 4 access cards */}
+        {/* 5 access cards (4 existing + First Time User) */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
             gap: "20px",
           }}
         >
@@ -1643,6 +1643,130 @@ export function LandingPage() {
               }}
             >
               <span>Access Panel</span>
+              <span style={{ fontSize: "16px" }}>→</span>
+            </div>
+          </button>
+
+          {/* Card 5: First Time User Registration */}
+          <button
+            type="button"
+            onClick={() => {
+              window.location.hash = "first-time-user";
+            }}
+            data-ocid="access-panels.first-time-user.button"
+            style={{
+              background:
+                "linear-gradient(160deg, #071a2e 0%, #0a2015 60%, #071828 100%)",
+              border: "1px solid rgba(8,145,178,0.25)",
+              borderRadius: "20px",
+              padding: "28px 24px",
+              cursor: "pointer",
+              textAlign: "left",
+              color: "#e2e8f0",
+              boxShadow:
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(8,145,178,0.1)",
+              transition:
+                "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+              position: "relative",
+              overflow: "hidden",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(-4px)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 16px 48px rgba(0,0,0,0.2), 0 4px 16px rgba(8,145,178,0.25)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(8,145,178,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.transform =
+                "translateY(0)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(8,145,178,0.1)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor =
+                "rgba(8,145,178,0.25)";
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                top: "-40px",
+                right: "-40px",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(8,145,178,0.12)",
+                filter: "blur(30px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, #0891b2, #059669)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "26px",
+                marginBottom: "18px",
+                boxShadow: "0 6px 18px rgba(8,145,178,0.4)",
+              }}
+            >
+              🆕
+            </div>
+            <div style={{ marginBottom: "6px" }}>
+              <span
+                style={{
+                  background: "rgba(8,145,178,0.2)",
+                  border: "1px solid rgba(8,145,178,0.3)",
+                  color: "#67e8f9",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: "20px",
+                  letterSpacing: "0.5px",
+                  textTransform: "uppercase",
+                }}
+              >
+                New User
+              </span>
+            </div>
+            <h3
+              style={{
+                fontWeight: 800,
+                fontSize: "18px",
+                color: "#f1f5f9",
+                margin: "8px 0 8px",
+                letterSpacing: "-0.2px",
+              }}
+            >
+              First Time User Registration
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "13px",
+                lineHeight: 1.6,
+                margin: 0,
+              }}
+            >
+              New to the system? Register here. Admin will approve and send your
+              login credentials.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginTop: "20px",
+                color: "#67e8f9",
+                fontSize: "13px",
+                fontWeight: 600,
+              }}
+            >
+              <span>Register Now</span>
               <span style={{ fontSize: "16px" }}>→</span>
             </div>
           </button>

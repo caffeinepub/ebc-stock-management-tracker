@@ -8,6 +8,7 @@ import { AdminDashboard } from "./pages/AdminDashboard";
 import { AdminDashboardStandalone } from "./pages/AdminDashboardStandalone";
 import { AdminLoginPanelPage } from "./pages/AdminLoginPanelPage";
 import { AppAdminPanelPage } from "./pages/AppAdminPanelPage";
+import { FirstTimeUserPanelPage } from "./pages/FirstTimeUserPanelPage";
 import { LandingPage } from "./pages/LandingPage";
 import { ManagerPanelPage } from "./pages/ManagerPanelPage";
 import { PendingApprovalPage } from "./pages/PendingApprovalPage";
@@ -152,6 +153,14 @@ export default function App() {
     return (
       <>
         <SupervisorPanelPage />
+        <Toaster position="top-right" />
+      </>
+    );
+  }
+  if (hash === "first-time-user") {
+    return (
+      <>
+        <FirstTimeUserPanelPage />
         <Toaster position="top-right" />
       </>
     );

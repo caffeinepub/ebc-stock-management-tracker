@@ -31,17 +31,19 @@ function mapRegRequest(r: {
     else status = "pending";
   }
 
-  // Normalize role: accept "Supervisor" exactly, treat everything else as "Manager"
-  // This covers: "Manager", "First Time User", "Staff", and any future roles
-  let mappedRole: "Manager" | "Supervisor" = "Manager";
+  // Normalize role: support Manager, Supervisor, and First Time User
+  let mappedRole: "Manager" | "Supervisor" | "First Time User" = "Manager";
   if (r.role === "Supervisor") mappedRole = "Supervisor";
+  else if (r.role === "First Time User") mappedRole = "First Time User";
+  else if (r.role === "Manager") mappedRole = "Manager";
+  // Any other role defaults to Manager
 
   const req: RegistrationRequest = {
     id: r.id,
     name: r.name,
     email: r.email,
     mobile: r.mobile,
-    role: mappedRole,
+    role: mappedRole as "Manager" | "Supervisor",
     status,
     submittedAt: Number(r.submittedAt / 1_000_000n), // nanoseconds → milliseconds
   };

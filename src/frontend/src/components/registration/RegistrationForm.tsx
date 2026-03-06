@@ -76,7 +76,7 @@ export function RegistrationForm({
     letterSpacing: "0.5px",
   };
 
-  // Helper: wait up to 15 seconds for actor to become available
+  // Helper: wait up to 40 seconds for actor to become available
   const waitForActor = (): Promise<typeof actor> => {
     return new Promise((resolve) => {
       if (actorRef.current) {
@@ -89,8 +89,8 @@ export function RegistrationForm({
         if (actorRef.current) {
           clearInterval(interval);
           resolve(actorRef.current);
-        } else if (attempts >= 30) {
-          // 30 x 500ms = 15 seconds max wait
+        } else if (attempts >= 80) {
+          // 80 x 500ms = 40 seconds max wait
           clearInterval(interval);
           resolve(null);
         }
@@ -127,28 +127,45 @@ export function RegistrationForm({
         return;
       }
 
+      // Generate a guaranteed-unique ID using crypto.randomUUID if available
+      const uniquePart =
+        typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
+          : `${Math.random().toString(36).slice(2, 9)}${Math.random().toString(36).slice(2, 9)}`;
+
       const req = {
-        // Use a unique ID combining timestamp + random suffix to prevent any collision
-        id: `reg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        id: `reg_${Date.now()}_${uniquePart}`,
         name: name.trim(),
         email: contactType === "email" ? email.trim() : "",
         mobile: contactType === "mobile" ? mobile.trim() : "",
         role,
       };
 
-      // Retry up to 3 times in case of transient network errors
+      // Retry up to 5 times in case of transient network errors
       let lastError: unknown = null;
       let submitted = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 5; attempt++) {
         try {
           await submitRegistrationToBackend(resolvedActor, req);
           submitted = true;
           break;
         } catch (err) {
           lastError = err;
-          // Wait 1 second before retrying
-          if (attempt < 2) {
-            await new Promise((r) => setTimeout(r, 1000));
+          // Wait 2 seconds before retrying (longer wait for canister to be ready)
+          if (attempt < 4) {
+            await new Promise((r) => setTimeout(r, 2000));
+            // Also check if a fresh actor is available now
+            const freshActor = actorRef.current;
+            if (freshActor && freshActor !== resolvedActor) {
+              // Use the fresh actor for retry
+              try {
+                await submitRegistrationToBackend(freshActor, req);
+                submitted = true;
+                break;
+              } catch {
+                // continue outer loop
+              }
+            }
           }
         }
       }

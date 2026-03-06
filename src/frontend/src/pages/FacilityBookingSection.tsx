@@ -183,9 +183,13 @@ function loadAudit(): AuditEntry[] {
 }
 
 function generateId(prefix: string): string {
-  const year = new Date().getFullYear();
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}-${year}-${rand}`;
+  const ts = Date.now();
+  // Use crypto.randomUUID for maximum uniqueness if available
+  const rand =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()
+      : `${Math.random().toString(36).slice(2, 7)}${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
+  return `${prefix}-${ts}-${rand}`;
 }
 
 function todayStr(): string {
@@ -684,6 +688,7 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   // MODULE 7: History search
   const [historySearch, setHistorySearch] = useState("");
   // MODULE 9: Approval greeting
@@ -712,7 +717,7 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       setFormMsg(null);
 
@@ -739,7 +744,6 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
       }
 
       // MODULE 1: Double Booking Prevention
-      // Check confirmed (calendar-blocked) slots first
       if (isSlotBlocked(form.room, form.date, form.startTime)) {
         setFormMsg({
           type: "error",
@@ -748,7 +752,6 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
         return;
       }
 
-      // Conflict detection in pending/approved bookings
       const current = loadBookings(LS_CONF);
       const conflict = current.find(
         (b) =>
@@ -782,85 +785,113 @@ function ConferenceRoomPanel({ role }: ConferencePanelProps) {
         bookingPurpose: form.bookingPurpose,
       };
 
-      const updated = [...current, newBooking];
-      saveBookings(LS_CONF, updated);
+      setSubmitting(true);
+      setFormMsg({ type: "success", text: "Connecting to server..." });
 
-      // Backend sync with retry — ensures cross-device admin panel receives the request
-      const syncToBackend = (
-        actorInstance: typeof actor,
-        retries = 3,
-      ): void => {
-        if (!actorInstance) return;
-        submitBookingRequestToBackend(actorInstance, {
-          id: newBooking.id,
-          bookingType: newBooking.type,
-          room: newBooking.room,
-          date: newBooking.date,
-          startTime: newBooking.startTime,
-          endTime: newBooking.endTime,
-          eventName: newBooking.eventName,
-          organizerName: newBooking.organizerName,
-          contact: newBooking.contact,
-          notes: newBooking.notes,
-          submittedBy: newBooking.organizerName,
-          designation: newBooking.designation ?? "",
-          bookingPurpose: newBooking.bookingPurpose ?? "",
-        }).catch(() => {
-          // Retry up to 3 times with increasing delay
-          if (retries > 0) {
-            setTimeout(() => syncToBackend(actorInstance, retries - 1), 2000);
+      // Wait up to 40s for actor — defined inline to avoid hook dep issues
+      const waitForActorConf = (): Promise<typeof actor> =>
+        new Promise((resolve) => {
+          if (actorRef.current) {
+            resolve(actorRef.current);
+            return;
           }
+          let attempts = 0;
+          const iv = setInterval(() => {
+            attempts++;
+            if (actorRef.current) {
+              clearInterval(iv);
+              resolve(actorRef.current);
+            } else if (attempts >= 80) {
+              clearInterval(iv);
+              resolve(null);
+            }
+          }, 500);
         });
-      };
 
-      if (actorRef.current) {
-        syncToBackend(actorRef.current);
-      } else {
-        // Actor not ready yet — wait up to 15s and retry using ref (always fresh)
-        let waited = 0;
-        const waitForActor = setInterval(() => {
-          waited += 500;
-          const freshActor = actorRef.current;
-          if (freshActor) {
-            clearInterval(waitForActor);
-            syncToBackend(freshActor);
-          } else if (waited >= 15000) {
-            clearInterval(waitForActor);
+      try {
+        // Wait for actor (up to 40s)
+        const resolvedActor = await waitForActorConf();
+        if (!resolvedActor) {
+          setFormMsg({
+            type: "error",
+            text: "Could not connect to server. Please refresh and try again.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        // Submit to backend — retry up to 5 times
+        let submitted = false;
+        let lastErr: unknown;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            await submitBookingRequestToBackend(resolvedActor, {
+              id: newBooking.id,
+              bookingType: newBooking.type,
+              room: newBooking.room,
+              date: newBooking.date,
+              startTime: newBooking.startTime,
+              endTime: newBooking.endTime,
+              eventName: newBooking.eventName,
+              organizerName: newBooking.organizerName,
+              contact: newBooking.contact,
+              notes: newBooking.notes,
+              submittedBy: newBooking.organizerName,
+              designation: newBooking.designation ?? "",
+              bookingPurpose: newBooking.bookingPurpose ?? "",
+            });
+            submitted = true;
+            break;
+          } catch (err) {
+            lastErr = err;
+            if (attempt < 4) await new Promise((r) => setTimeout(r, 2000));
           }
-        }, 500);
-      }
+        }
 
-      appendAudit(
-        {
-          action: "CREATE",
-          userRole: role,
-          bookingId: newBooking.id,
-          details: `Created booking for ${form.room} on ${form.date}`,
-        },
-        role,
-      );
-      setBookings(updated);
-      // Save organizer name so notification poller can detect approval notifications
-      if (newBooking.organizerName) {
-        setLastOrganizerName(newBooking.organizerName);
+        if (!submitted) throw lastErr;
+
+        // Only save to localStorage and show success AFTER backend confirms
+        const updated = [...current, newBooking];
+        saveBookings(LS_CONF, updated);
+        appendAudit(
+          {
+            action: "CREATE",
+            userRole: role,
+            bookingId: newBooking.id,
+            details: `Created booking for ${form.room} on ${form.date}`,
+          },
+          role,
+        );
+        setBookings(updated);
+        if (newBooking.organizerName) {
+          setLastOrganizerName(newBooking.organizerName);
+        }
+        setForm({
+          room: "",
+          date: "",
+          startTime: "",
+          endTime: "",
+          eventName: "",
+          organizerName: "",
+          contact: "",
+          notes: "",
+          designation: "",
+          bookingPurpose: "",
+        });
+        setFormMsg({
+          type: "success",
+          text: `Booking ${newBooking.id} submitted successfully. Awaiting admin approval.`,
+        });
+      } catch {
+        setFormMsg({
+          type: "error",
+          text: "Failed to submit booking. Please check your internet connection and try again.",
+        });
+      } finally {
+        setSubmitting(false);
       }
-      setForm({
-        room: "",
-        date: "",
-        startTime: "",
-        endTime: "",
-        eventName: "",
-        organizerName: "",
-        contact: "",
-        notes: "",
-        designation: "",
-        bookingPurpose: "",
-      });
-      setFormMsg({
-        type: "success",
-        text: `Booking ${newBooking.id} submitted successfully. Awaiting approval.`,
-      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [form, role],
   );
 
@@ -1484,31 +1515,38 @@ Corporate Facility Management Team`}
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   data-ocid="facility-booking.conference.submit_button"
                   style={{
                     marginTop: "16px",
                     width: "100%",
-                    background: "linear-gradient(135deg, #1d4ed8, #3b82f6)",
+                    background: submitting
+                      ? "rgba(59,130,246,0.4)"
+                      : "linear-gradient(135deg, #1d4ed8, #3b82f6)",
                     border: "none",
                     borderRadius: "10px",
                     color: "white",
                     fontWeight: 700,
                     fontSize: "14px",
                     padding: "12px 24px",
-                    cursor: "pointer",
+                    cursor: submitting ? "not-allowed" : "pointer",
                     letterSpacing: "0.3px",
                     boxShadow: "0 4px 16px rgba(59,130,246,0.35)",
                     transition: "opacity 0.2s, transform 0.15s",
                     fontFamily: "inherit",
+                    opacity: submitting ? 0.7 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
+                    if (!submitting)
+                      e.currentTarget.style.transform = "translateY(-1px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  Submit Booking Request
+                  {submitting
+                    ? "Submitting to Admin..."
+                    : "Submit Booking Request"}
                 </button>
               </form>
             </div>
@@ -2141,6 +2179,7 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [selectedCalDate, setSelectedCalDate] = useState<string | null>(null);
   // MODULE 7: History search
   const [historySearch, setHistorySearch] = useState("");
@@ -2170,7 +2209,7 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       setFormMsg(null);
 
@@ -2196,7 +2235,7 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
         return;
       }
 
-      // MODULE 1: Double Booking Prevention — check confirmed slots first
+      // MODULE 1: Double Booking Prevention
       if (isSlotBlocked(form.room, form.date, form.startTime)) {
         setFormMsg({
           type: "error",
@@ -2242,88 +2281,113 @@ function DiningRoomPanel({ role }: DiningPanelProps) {
         bookingPurpose: form.bookingPurpose,
       };
 
-      const updated = [...current, newBooking];
-      saveBookings(LS_DINING, updated);
+      setSubmitting(true);
+      setFormMsg({ type: "success", text: "Connecting to server..." });
 
-      // Backend sync with retry — ensures cross-device admin panel receives the request
-      const syncDiningToBackend = (
-        actorInstance: typeof actor,
-        retries = 3,
-      ): void => {
-        if (!actorInstance) return;
-        submitBookingRequestToBackend(actorInstance, {
-          id: newBooking.id,
-          bookingType: newBooking.type,
-          room: newBooking.room,
-          date: newBooking.date,
-          startTime: newBooking.startTime,
-          endTime: newBooking.endTime,
-          eventName: newBooking.eventName,
-          organizerName: newBooking.organizerName,
-          contact: newBooking.contact,
-          notes: newBooking.notes,
-          submittedBy: newBooking.organizerName,
-          designation: newBooking.designation ?? "",
-          bookingPurpose: newBooking.bookingPurpose ?? "",
-        }).catch(() => {
-          if (retries > 0) {
-            setTimeout(
-              () => syncDiningToBackend(actorInstance, retries - 1),
-              2000,
-            );
+      // Wait up to 40s for actor — defined inline to avoid hook dep issues
+      const waitForActorDining = (): Promise<typeof actor> =>
+        new Promise((resolve) => {
+          if (actorRef.current) {
+            resolve(actorRef.current);
+            return;
           }
+          let attempts = 0;
+          const iv = setInterval(() => {
+            attempts++;
+            if (actorRef.current) {
+              clearInterval(iv);
+              resolve(actorRef.current);
+            } else if (attempts >= 80) {
+              clearInterval(iv);
+              resolve(null);
+            }
+          }, 500);
         });
-      };
 
-      if (actorRef.current) {
-        syncDiningToBackend(actorRef.current);
-      } else {
-        // Actor not ready yet — wait up to 15s using ref (always fresh, no stale closure)
-        let waited = 0;
-        const waitForActor = setInterval(() => {
-          waited += 500;
-          const freshActor = actorRef.current;
-          if (freshActor) {
-            clearInterval(waitForActor);
-            syncDiningToBackend(freshActor);
-          } else if (waited >= 15000) {
-            clearInterval(waitForActor);
+      try {
+        const resolvedActor = await waitForActorDining();
+        if (!resolvedActor) {
+          setFormMsg({
+            type: "error",
+            text: "Could not connect to server. Please refresh and try again.",
+          });
+          setSubmitting(false);
+          return;
+        }
+
+        // Submit to backend — retry up to 5 times
+        let submitted = false;
+        let lastErr: unknown;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          try {
+            await submitBookingRequestToBackend(resolvedActor, {
+              id: newBooking.id,
+              bookingType: newBooking.type,
+              room: newBooking.room,
+              date: newBooking.date,
+              startTime: newBooking.startTime,
+              endTime: newBooking.endTime,
+              eventName: newBooking.eventName,
+              organizerName: newBooking.organizerName,
+              contact: newBooking.contact,
+              notes: newBooking.notes,
+              submittedBy: newBooking.organizerName,
+              designation: newBooking.designation ?? "",
+              bookingPurpose: newBooking.bookingPurpose ?? "",
+            });
+            submitted = true;
+            break;
+          } catch (err) {
+            lastErr = err;
+            if (attempt < 4) await new Promise((r) => setTimeout(r, 2000));
           }
-        }, 500);
-      }
+        }
 
-      appendAudit(
-        {
-          action: "CREATE",
-          userRole: role,
-          bookingId: newBooking.id,
-          details: `Created dining booking for ${form.room} on ${form.date}`,
-        },
-        role,
-      );
-      setBookings(updated);
-      // Save organizer name so notification poller can detect approval notifications
-      if (newBooking.organizerName) {
-        setLastOrganizerName(newBooking.organizerName);
+        if (!submitted) throw lastErr;
+
+        // Only save/show success AFTER backend confirms
+        const updated = [...current, newBooking];
+        saveBookings(LS_DINING, updated);
+        appendAudit(
+          {
+            action: "CREATE",
+            userRole: role,
+            bookingId: newBooking.id,
+            details: `Created dining booking for ${form.room} on ${form.date}`,
+          },
+          role,
+        );
+        setBookings(updated);
+        if (newBooking.organizerName) {
+          setLastOrganizerName(newBooking.organizerName);
+        }
+        setForm({
+          room: "",
+          eventType: "",
+          date: "",
+          startTime: "",
+          endTime: "",
+          numGuests: "",
+          organizerName: "",
+          contact: "",
+          notes: "",
+          designation: "",
+          bookingPurpose: "",
+        });
+        setFormMsg({
+          type: "success",
+          text: `Booking ${newBooking.id} submitted successfully. Awaiting admin approval.`,
+        });
+      } catch {
+        setFormMsg({
+          type: "error",
+          text: "Failed to submit booking. Please check your internet connection and try again.",
+        });
+      } finally {
+        setSubmitting(false);
       }
-      setForm({
-        room: "",
-        eventType: "",
-        date: "",
-        startTime: "",
-        endTime: "",
-        numGuests: "",
-        organizerName: "",
-        contact: "",
-        notes: "",
-        designation: "",
-        bookingPurpose: "",
-      });
-      setFormMsg({
-        type: "success",
-        text: `Booking ${newBooking.id} submitted successfully. Awaiting approval.`,
-      });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [form, role],
   );
 
@@ -2981,31 +3045,38 @@ Corporate Facility Management Team`}
 
                 <button
                   type="submit"
+                  disabled={submitting}
                   data-ocid="facility-booking.dining.submit_button"
                   style={{
                     marginTop: "16px",
                     width: "100%",
-                    background: "linear-gradient(135deg, #7c3aed, #a855f7)",
+                    background: submitting
+                      ? "rgba(124,58,237,0.4)"
+                      : "linear-gradient(135deg, #7c3aed, #a855f7)",
                     border: "none",
                     borderRadius: "10px",
                     color: "white",
                     fontWeight: 700,
                     fontSize: "14px",
                     padding: "12px 24px",
-                    cursor: "pointer",
+                    cursor: submitting ? "not-allowed" : "pointer",
                     letterSpacing: "0.3px",
                     boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
                     transition: "opacity 0.2s, transform 0.15s",
                     fontFamily: "inherit",
+                    opacity: submitting ? 0.7 : 1,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-1px)";
+                    if (!submitting)
+                      e.currentTarget.style.transform = "translateY(-1px)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = "translateY(0)";
                   }}
                 >
-                  Submit Dining Room Request
+                  {submitting
+                    ? "Submitting to Admin..."
+                    : "Submit Dining Room Request"}
                 </button>
               </form>
             </div>
